@@ -12,12 +12,12 @@ import {
   View,
 } from 'react-native'
 import { colors, radius, spacing } from '../constants/theme'
-import { searchAlbums } from '../lib/itunes'
-import type { ItunesAlbumResult } from '../lib/types'
+import { searchAlbums } from '../lib/spotify'
+import type { SpotifyAlbumResult } from '../lib/types'
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<ItunesAlbumResult[]>([])
+  const [results, setResults] = useState<SpotifyAlbumResult[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -36,7 +36,9 @@ export default function SearchScreen() {
     timerRef.current = setTimeout(() => {
       searchAlbums(trimmed)
         .then(setResults)
-        .catch(() => setError('Não foi possível buscar. Tente novamente.'))
+        .catch((err) =>
+          setError(err instanceof Error ? err.message : 'Não foi possível buscar. Tente novamente.'),
+        )
         .finally(() => setLoading(false))
     }, 400)
     return () => {
@@ -44,16 +46,16 @@ export default function SearchScreen() {
     }
   }, [query])
 
-  const handleSelect = (album: ItunesAlbumResult) => {
+  const handleSelect = (album: SpotifyAlbumResult) => {
     router.replace({
       pathname: '/album/[id]',
       params: {
-        id: String(album.collectionId),
-        title: album.collectionName,
-        artist: album.artistName,
-        artworkUrl: album.artworkUrl100 ?? '',
+        id: album.id,
+        title: album.title,
+        artist: album.artist,
+        artworkUrl: album.artworkUrl ?? '',
         releaseDate: album.releaseDate ?? '',
-        genre: album.primaryGenreName ?? '',
+        genre: album.genre ?? '',
         fromSearch: '1',
       },
     })
@@ -90,21 +92,21 @@ export default function SearchScreen() {
       ) : (
         <FlatList
           data={results}
-          keyExtractor={(item) => String(item.collectionId)}
+          keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <Pressable style={styles.row} onPress={() => handleSelect(item)}>
               <Image
-                source={item.artworkUrl100 ?? undefined}
+                source={item.artworkUrl ?? undefined}
                 style={styles.cover}
                 contentFit="cover"
                 transition={150}
               />
               <View style={styles.info}>
                 <Text style={styles.title} numberOfLines={1}>
-                  {item.collectionName}
+                  {item.title}
                 </Text>
                 <Text style={styles.subtitle} numberOfLines={1}>
-                  {item.artistName}
+                  {item.artist}
                 </Text>
                 {year(item.releaseDate) ? (
                   <Text style={styles.subtitle}>{year(item.releaseDate)}</Text>

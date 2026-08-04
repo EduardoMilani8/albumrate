@@ -13,13 +13,13 @@ export interface LoggedAlbum {
   status: AlbumStatus
 }
 
-export interface ItunesAlbumResult {
-  collectionId: number
-  collectionName: string
-  artistName: string
-  artworkUrl100: string | null
+export interface SpotifyAlbumResult {
+  id: string
+  title: string
+  artist: string
+  artworkUrl: string | null
   releaseDate: string | null
-  primaryGenreName: string | null
+  genre: string | null
 }
 
 export interface GenreCount {
