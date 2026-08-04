@@ -21,6 +21,7 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
+      "output": "static",
       "favicon": "./assets/favicon.png"
     }
   }
