@@ -1,13 +1,18 @@
 {
   "expo": {
     "name": "albumrate",
-    "slug": "albumrate",
+    "slug": "eduardo-celular",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "scheme": "albumrate",
-    "plugins": ["expo-router", "expo-sqlite"],
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-secure-store",
+      "@react-native-community/datetimepicker"
+    ],
     "ios": {
       "supportsTablet": true
     },
@@ -18,11 +23,19 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.edui1steam.eduardocelular"
     },
     "web": {
       "output": "static",
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2203bddd-2ffc-4ec2-82b5-8cf72b957fa5"
+      }
+    },
+    "owner": "edui1s-team"
   }
 }

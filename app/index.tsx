@@ -5,20 +5,27 @@ import { useCallback, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import AlbumCard from '../components/AlbumCard'
 import { colors, radius, spacing } from '../constants/theme'
+import { api } from '../lib/api'
 import { getAllAlbums } from '../lib/db'
-import type { LoggedAlbum } from '../lib/types'
+import type { LoggedAlbum, Review } from '../lib/types'
 
 export default function IndexScreen() {
   const db = useSQLiteContext()
   const [albums, setAlbums] = useState<LoggedAlbum[]>([])
+  const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
 
   useFocusEffect(
     useCallback(() => {
       let active = true
-      getAllAlbums(db)
-        .then((rows) => {
-          if (active) setAlbums(rows)
+      Promise.all([getAllAlbums(db), api.myReviews()])
+        .then(([rows, reviewData]) => {
+          if (!active) return
+          setAlbums(rows)
+          setReviews(reviewData.reviews)
+        })
+        .catch((err) => {
+          console.warn(err)
         })
         .finally(() => {
           if (active) setLoading(false)
@@ -31,9 +38,9 @@ export default function IndexScreen() {
 
   const logged = albums.filter((album) => album.status === 'logged')
   const average =
-    logged.length === 0
+    reviews.length === 0
       ? null
-      : logged.reduce((sum, album) => sum + (album.rating ?? 0), 0) / logged.length
+      : reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
 
   return (
     <View style={styles.container}>
@@ -55,9 +62,16 @@ export default function IndexScreen() {
         <FlatList
           data={albums}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <AlbumCard album={item} onPress={() => router.push(`/album/${item.id}`)} />
-          )}
+          renderItem={({ item }) => {
+            const myRating = reviews.find((review) => review.albumId === item.id)?.rating ?? null
+            return (
+              <AlbumCard
+                album={item}
+                rating={myRating}
+                onPress={() => router.push(`/album/${item.id}`)}
+              />
+            )
+          }}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <View style={styles.empty}>

@@ -6,10 +6,11 @@ import type { LoggedAlbum } from '../lib/types'
 
 interface AlbumCardProps {
   album: LoggedAlbum
+  rating?: number | null
   onPress: () => void
 }
 
-export default function AlbumCard({ album, onPress }: AlbumCardProps) {
+export default function AlbumCard({ album, rating, onPress }: AlbumCardProps) {
   const year = album.releaseDate
     ? new Date(album.releaseDate).getFullYear().toString()
     : null
@@ -34,7 +35,7 @@ export default function AlbumCard({ album, onPress }: AlbumCardProps) {
           {album.status === 'logged' ? (
             <View style={styles.rating}>
               <Ionicons name="star" size={14} color={colors.star} />
-              <Text style={styles.ratingText}>{album.rating?.toFixed(1) ?? '—'}</Text>
+              <Text style={styles.ratingText}>{rating?.toFixed(1) ?? '—'}</Text>
             </View>
           ) : (
             <Text style={styles.wantToListen}>Quero ouvir</Text>

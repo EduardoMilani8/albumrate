@@ -1,22 +1,25 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
-import { router, useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
 import { useSQLiteContext } from 'expo-sqlite'
-import { useEffect, useState } from 'react'
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native'
+import { useCallback, useEffect, useState } from 'react'
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import ReviewModal from '../../components/ReviewModal'
 import StarRating from '../../components/StarRating'
 import { colors, radius, spacing } from '../../constants/theme'
+import { api } from '../../lib/api'
 import { deleteAlbum, getAlbumById, upsertAlbum } from '../../lib/db'
-import type { LoggedAlbum } from '../../lib/types'
+import type { AlbumReviewsResponse, LoggedAlbum, Review } from '../../lib/types'
+
+function formatListenedAt(value: string): string {
+  const [year, month, day] = value.split('-')
+  if (!year || !month || !day) return value
+  return `${day}/${month}/${year}`
+}
+
+function formatReviewDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 
 export default function AlbumDetailScreen() {
   const params = useLocalSearchParams<{
@@ -31,10 +34,19 @@ export default function AlbumDetailScreen() {
   const db = useSQLiteContext()
 
   const [album, setAlbum] = useState<LoggedAlbum | null>(null)
-  const [rating, setRating] = useState<number | null>(null)
-  const [review, setReview] = useState('')
+  const [reviewsData, setReviewsData] = useState<AlbumReviewsResponse | null>(null)
   const [existing, setExisting] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [modalVisible, setModalVisible] = useState(false)
+
+  const loadReviews = useCallback(async () => {
+    try {
+      const data = await api.getAlbumReviews(params.id)
+      setReviewsData(data)
+    } catch (err) {
+      console.warn(err)
+    }
+  }, [params.id])
 
   useEffect(() => {
     let active = true
@@ -43,10 +55,8 @@ export default function AlbumDetailScreen() {
       if (!active) return
       if (found) {
         setAlbum(found)
-        setRating(found.rating)
-        setReview(found.review ?? '')
         setExisting(true)
-      } else if (params.fromSearch === '1') {
+      } else if (params.title) {
         setAlbum({
           id: params.id,
           title: params.title ?? '',
@@ -68,20 +78,25 @@ export default function AlbumDetailScreen() {
     }
   }, [db, params.id])
 
-  const saveLogged = async () => {
-    if (rating === null) {
-      Alert.alert('Nota obrigatória', 'Selecione uma nota de 0,5 a 5 estrelas antes de salvar.')
-      return
+  useEffect(() => {
+    loadReviews()
+  }, [loadReviews])
+
+  const handleSaved = async (review: Review) => {
+    if (album) {
+      await upsertAlbum(db, {
+        ...album,
+        rating: null,
+        review: null,
+        loggedAt: new Date().toISOString(),
+        status: 'logged',
+      })
     }
-    if (!album) return
-    await upsertAlbum(db, {
-      ...album,
-      rating,
-      review: review.trim() || null,
-      loggedAt: new Date().toISOString(),
-      status: 'logged',
-    })
-    router.replace('/')
+    await loadReviews()
+  }
+
+  const handleDeleted = async () => {
+    await loadReviews()
   }
 
   const saveWantToListen = async () => {
@@ -93,7 +108,6 @@ export default function AlbumDetailScreen() {
       loggedAt: new Date().toISOString(),
       status: 'want_to_listen',
     })
-    router.replace('/')
   }
 
   const removeAlbum = () => {
@@ -104,7 +118,6 @@ export default function AlbumDetailScreen() {
         style: 'destructive',
         onPress: async () => {
           await deleteAlbum(db, params.id)
-          router.replace('/')
         },
       },
     ])
@@ -124,6 +137,10 @@ export default function AlbumDetailScreen() {
 
   const year = album.releaseDate ? new Date(album.releaseDate).getFullYear().toString() : null
   const meta = [year, album.genre].filter(Boolean).join(' • ')
+  const myReview = reviewsData?.myReview ?? null
+  const otherReviews = (reviewsData?.reviews ?? []).filter(
+    (review) => review.id !== myReview?.id,
+  )
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -137,28 +154,74 @@ export default function AlbumDetailScreen() {
       <Text style={styles.artist}>{album.artist}</Text>
       {meta ? <Text style={styles.meta}>{meta}</Text> : null}
 
-      <Text style={styles.sectionLabel}>Sua nota</Text>
-      <View style={styles.ratingRow}>
-        <StarRating rating={rating} onChange={setRating} size={36} />
-        {rating !== null ? <Text style={styles.ratingValue}>{rating.toFixed(1)}</Text> : null}
+      <View style={styles.averageCard}>
+        <Text style={styles.averageValue}>
+          {reviewsData?.average !== null && reviewsData?.average !== undefined
+            ? reviewsData.average.toFixed(1)
+            : '—'}
+        </Text>
+        <StarRating rating={reviewsData?.average ?? null} size={18} readOnly />
+        <Text style={styles.averageLabel}>
+          {reviewsData && reviewsData.count > 0
+            ? `${reviewsData.count} avaliação${reviewsData.count === 1 ? '' : 'ões'}`
+            : 'Sem avaliações ainda'}
+        </Text>
       </View>
 
-      <Text style={styles.sectionLabel}>Anotação</Text>
-      <TextInput
-        style={styles.input}
-        value={review}
-        onChangeText={setReview}
-        placeholder="Escreva sua opinião sobre o álbum (opcional)"
-        placeholderTextColor={colors.textMuted}
-        multiline
-        textAlignVertical="top"
-      />
-
-      <Pressable style={styles.primaryButton} onPress={saveLogged}>
-        <Text style={styles.primaryButtonText}>Salvar avaliação</Text>
+      <Pressable style={styles.primaryButton} onPress={() => setModalVisible(true)}>
+        <Ionicons name={myReview ? 'create-outline' : 'star-outline'} size={20} color={colors.background} />
+        <Text style={styles.primaryButtonText}>{myReview ? 'Editar minha avaliação' : 'Avaliar álbum'}</Text>
       </Pressable>
+
+      {myReview ? (
+        <View style={styles.myReviewCard}>
+          <Text style={styles.sectionLabel}>Sua avaliação</Text>
+          <View style={styles.myReviewHeader}>
+            <StarRating rating={myReview.rating} size={16} readOnly />
+            <Text style={styles.myReviewDate}>
+              Ouvido em {formatListenedAt(myReview.listenedAt)}
+            </Text>
+          </View>
+          {myReview.reviewText ? (
+            <Text style={styles.reviewText}>{myReview.reviewText}</Text>
+          ) : null}
+          <Pressable style={styles.editLink} onPress={() => setModalVisible(true)}>
+            <Ionicons name="create-outline" size={14} color={colors.accent} />
+            <Text style={styles.editLinkText}>Editar</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      {otherReviews.length > 0 ? (
+        <View style={styles.reviewsSection}>
+          <Text style={styles.sectionLabel}>Resenhas</Text>
+          {otherReviews.map((review) => (
+            <View key={review.id} style={styles.reviewCard}>
+              <View style={styles.reviewHeader}>
+                <Text style={styles.reviewAuthor}>
+                  {review.user?.name || review.user?.email || 'Anônimo'}
+                </Text>
+                <Text style={styles.reviewMeta}>
+                  {formatReviewDate(review.createdAt)} · {formatListenedAt(review.listenedAt)}
+                </Text>
+              </View>
+              <StarRating rating={review.rating} size={14} readOnly />
+              {review.reviewText ? (
+                <Text style={styles.reviewText}>{review.reviewText}</Text>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      <View style={styles.divider} />
+
+      <Text style={styles.sectionLabel}>Na sua lista</Text>
       <Pressable style={styles.secondaryButton} onPress={saveWantToListen}>
-        <Text style={styles.secondaryButtonText}>Marcar como quero ouvir</Text>
+        <Ionicons name="headset-outline" size={18} color={colors.text} />
+        <Text style={styles.secondaryButtonText}>
+          {album.status === 'want_to_listen' ? 'Marcado: quero ouvir' : 'Marcar como quero ouvir'}
+        </Text>
       </Pressable>
       {existing ? (
         <Pressable style={styles.deleteButton} onPress={removeAlbum}>
@@ -166,6 +229,18 @@ export default function AlbumDetailScreen() {
           <Text style={styles.deleteButtonText}>Remover da lista</Text>
         </Pressable>
       ) : null}
+
+      <ReviewModal
+        visible={modalVisible}
+        albumId={album.id}
+        albumTitle={album.title}
+        albumArtist={album.artist}
+        albumArtworkUrl={album.artworkUrl}
+        initialReview={myReview}
+        onClose={() => setModalVisible(false)}
+        onSaved={handleSaved}
+        onDeleted={handleDeleted}
+      />
     </ScrollView>
   )
 }
@@ -202,34 +277,22 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 13,
   },
-  sectionLabel: {
-    alignSelf: 'flex-start',
-    color: colors.textMuted,
-    fontSize: 13,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  ratingRow: {
-    flexDirection: 'row',
+  averageCard: {
+    alignSelf: 'stretch',
     alignItems: 'center',
-    gap: spacing.md,
-    alignSelf: 'stretch',
-  },
-  ratingValue: {
-    color: colors.star,
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  input: {
-    alignSelf: 'stretch',
-    minHeight: 120,
-    color: colors.text,
+    gap: spacing.xs,
+    padding: spacing.md,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    fontSize: 15,
+  },
+  averageValue: {
+    color: colors.star,
+    fontSize: 32,
+    fontWeight: '800',
+  },
+  averageLabel: {
+    color: colors.textMuted,
+    fontSize: 13,
   },
   primaryButton: {
     alignSelf: 'stretch',
@@ -238,11 +301,84 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
   primaryButtonText: {
-    color: colors.text,
+    color: colors.background,
     fontSize: 16,
     fontWeight: '700',
+  },
+  myReviewCard: {
+    alignSelf: 'stretch',
+    gap: spacing.sm,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+  },
+  myReviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  myReviewDate: {
+    color: colors.textMuted,
+    fontSize: 13,
+  },
+  editLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  editLinkText: {
+    color: colors.accent,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  sectionLabel: {
+    alignSelf: 'flex-start',
+    color: colors.textMuted,
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  reviewsSection: {
+    alignSelf: 'stretch',
+    gap: spacing.sm,
+  },
+  reviewCard: {
+    gap: spacing.sm,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  reviewAuthor: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+  },
+  reviewMeta: {
+    color: colors.textMuted,
+    fontSize: 12,
+  },
+  reviewText: {
+    color: colors.text,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  divider: {
+    alignSelf: 'stretch',
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: spacing.sm,
   },
   secondaryButton: {
     alignSelf: 'stretch',
@@ -253,6 +389,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
   secondaryButtonText: {
     color: colors.text,

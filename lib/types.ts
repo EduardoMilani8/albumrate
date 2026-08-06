@@ -26,3 +26,40 @@ export interface GenreCount {
   genre: string
   count: number
 }
+
+export interface AuthUser {
+  id: string
+  email: string
+  name: string | null
+}
+
+export interface ReviewUser {
+  email: string
+  name: string | null
+}
+
+export interface Review {
+  id: string
+  albumId: string
+  albumTitle: string
+  albumArtist: string
+  albumArtworkUrl: string | null
+  rating: number
+  reviewText: string | null
+  listenedAt: string
+  createdAt: string
+  updatedAt: string
+  user?: ReviewUser
+}
+
+export interface AlbumReviewsResponse {
+  albumId: string
+  average: number | null
+  count: number
+  reviews: Review[]
+  myReview: Review | null
+}
+
+export interface MyReviewsResponse {
+  reviews: Review[]
+}
