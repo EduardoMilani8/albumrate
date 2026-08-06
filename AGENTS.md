@@ -7,6 +7,16 @@
 - **Avaliações e usuários vivem num backend** (`server/`): Node/Express + Postgres (Drizzle) + JWT + bcrypt. O app autentica com e-mail/senha e busca reviews via API.
 - **Backend em produção:** Railway (`albumrate-production.up.railway.app`) — ver "Deploy" abaixo.
 
+## ⚠️ Banco de dados local — NUNCA tocar
+
+- **O Postgres local que existe na máquina (DBeaver) NÃO pertence ao projeto e NÃO tem relação nenhuma com o Albumrate.** Ele é de outra pessoa/uso.
+- **PROIBIDO** executar qualquer comando que crie/altere/apague tabelas, bancos ou dados nesse Postgres local: `npm run migrate`, `drizzle-kit push/generate` com conexão, `CREATE TABLE`, `psql`, etc.
+- **Migrações (arquivos em `server/drizzle/`) só podem ser aplicadas:**
+  1. Em **produção**, automaticamente pelo Railway no boot do deploy (não precisa fazer nada manualmente); ou
+  2. Em um **banco de teste criado de propósito para isso** (ex.: Postgres local novo do usuário, Docker, ou um serviço cloud gratuito), apontando o `DATABASE_URL` de um `server/.env` **próprio do projeto**.
+- A validação das migrações é feita apenas por `npx drizzle-kit generate` (gera o SQL sem conectar em banco nenhum) + `cd server && npm run build` / `npx tsc --noEmit`.
+- Se for preciso testar migração contra banco real, **pergunte antes** ao usuário e só rode se ele fornecer um `DATABASE_URL` de banco de teste do projeto.
+
 ## Commands
 
 - **Typecheck (app):** `npx tsc --noEmit` (roda limpo; corrija erros antes de entregar)
@@ -14,6 +24,8 @@
 - **Run (app):** `npx expo start` (QR no terminal; `w` = web)
 - **Run (server):** `cd server && cp .env.example .env && npm run migrate && npm run dev`
 - **Unit tests:** não há test runner configurado.
+
+> ⚠️ O `npm run migrate` acima só deve ser rodado com um `server/.env` apontando para um **banco de teste do projeto** — nunca para o Postgres local do DBeaver (ver seção "Banco de dados local").
 
 ## Env vars
 
