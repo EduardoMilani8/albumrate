@@ -3,7 +3,7 @@
 ## Project
 
 - **Albumrate** — Expo SDK 57 (React Native 0.86, React 19) + TypeScript (strict) + expo-router + expo-sqlite.
-- App de avaliação de álbuns: busca no Spotify, nota em estrelas (meio-ponto), resenha, data ouvida, perfil, persistência local em SQLite, tema dark.
+- App de avaliação de álbuns: busca no Spotify, nota em estrelas (meio-ponto), resenha, data ouvida, perfil, persistência local em SQLite, tema dark. Inclui **avaliação opcional de mídia física** (vinil/CD/cassete/digital, qualidade da prensagem, condição) e **diário de escuta** (`listening_logs`) para registrar releituras por data.
 - **Avaliações e usuários vivem num backend** (`server/`): Node/Express + Postgres (Drizzle) + JWT + bcrypt. O app autentica com e-mail/senha e busca reviews via API.
 - **Backend em produção:** Railway (`albumrate-production.up.railway.app`) — ver "Deploy" abaixo.
 
@@ -36,11 +36,11 @@ JWT_SECRET=...
 
 ## Structure
 
-- `app/` — rotas expo-router (`_layout.tsx`, `index.tsx`, `search.tsx`, `album/[id].tsx`, `login.tsx`, `register.tsx`, `profile.tsx`)
-- `components/` — `AlbumCard`, `StarRating`, `ReviewModal`
+- `app/` — rotas expo-router (`_layout.tsx`, `index.tsx`, `search.tsx`, `album/[id].tsx`, `diary.tsx`, `login.tsx`, `register.tsx`, `profile.tsx`)
+- `components/` — `AlbumCard`, `StarRating`, `ReviewModal`, `MediaReviewCard`
 - `constants/` — `theme.ts` (colors/spacing/radius dark; usar sempre)
 - `lib/` — `db.ts` (SQLite local, só status `logged`/`want_to_listen`), `spotify.ts` (API), `types.ts`, `api.ts` (cliente HTTP do backend), `auth.tsx` (AuthContext + SecureStore)
-- `server/` — API Node/Express + Postgres (Drizzle): `src/schema.ts`, `src/routes/{auth,reviews}.ts`, `src/migrate.ts`, `drizzle/` (migrações geradas), `Dockerfile`, `.dockerignore`
+- `server/` — API Node/Express + Postgres (Drizzle): `src/schema.ts`, `src/routes/{auth,reviews,listeningLogs}.ts`, `src/lib/dates.ts` (helpers de data), `src/migrate.ts`, `drizzle/` (migrações geradas), `Dockerfile`, `.dockerignore`
 - `metro.config.js` — `.wasm` como asset + headers COEP/COOP (expo-sqlite web)
 
 ## Conventions
@@ -54,6 +54,7 @@ JWT_SECRET=...
 - `npx tsc --noEmit` deve passar ao final de qualquer mudança.
 - Todo endpoint de `server/` deve validar entrada com **zod** (schema) e devolver `{ error }` com status 4xx.
 - Mudanças no `server/` vão a produção automaticamente ao commitar (Railway redeploya) — teste local antes de commitar.
+- **Após todo commit + push, atualize os docs se algo mudou** (estrutura, rotas, endpoints, fluxo, comandos): `AGENTS.md`, `README.md` e `CLAUDE.md` (o `CLAUDE.md` apenas referencia o `AGENTS.md` via `@AGENTS.md`). Se a mudança não alterar nada documentado, apenas confirme que os docs seguem corretos.
 
 ## Known issues / gotchas
 

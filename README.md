@@ -1,6 +1,6 @@
 # Albumrate
 
-Aplicativo para registrar, avaliar e acompanhar álbuns. Busca de álbuns via API do Spotify, avaliação em estrelas (com meio-ponto), resenha, data em que ouviu e perfil. Conta com **backend próprio** para usuários e avaliações.
+Aplicativo para registrar, avaliar e acompanhar álbuns. Busca de álbuns via API do Spotify, avaliação em estrelas (com meio-ponto), resenha, data em que ouviu, **avaliação opcional de mídia física** (qualidade da prensagem, condição), **diário de escuta** e perfil. Conta com **backend próprio** para usuários e avaliações.
 
 Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, em tema dark, + **Node/Express + Postgres (Drizzle)** no `server/`.
 
@@ -9,11 +9,13 @@ Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, em tema dark
 - Busca de álbuns na **API do Spotify** (com debounce de 400ms)
 - Avaliação em estrelas de 0,5 a 5 (meio-ponto via toque na metade esquerda/direita da estrela)
 - Resenha (texto) opcional + **data em que ouviu** (padrão: hoje)
+- **Avaliação de mídia física** (opcional, separada da nota do álbum): tipo (vinil/CD/cassete/digital), qualidade do master/prensagem, edição e condição
 - **1 avaliação por usuário por álbum** (reavaliar edita, não duplica)
 - **Nota média de todos os usuários** + lista de resenhas na página do álbum
+- **Diário de escuta**: botão "Marcar como ouvido hoje" na página do álbum + timeline "Meu Diário" agrupada por mês, com remoção de registros
 - **Cadastro/login** com e-mail e senha (JWT, token salvo no `expo-secure-store`)
 - **Perfil** com suas avaliações (mais recentes primeiro), remoção e logout
-- Status local: **avaliado** (`logged`) ou **quero ouvir** (`want_to_listen`)
+- Status local: **avaliado** (`logged`) ou **quero ouvir** (`want_to_listen`), com filtro "Quero ouvir" na home (só marca quem ainda não avaliou)
 - Estatísticas na home: total de álbuns avaliados e sua nota média
 
 ## Stack
@@ -94,12 +96,13 @@ Verifique tipos antes de commitar: `npx tsc --noEmit` (app) e `cd server && npx 
 albumrate/
 ├── app/                    # rotas (expo-router)
 │   ├── _layout.tsx         # providers + Stack com rotas protegidas (login)
-│   ├── index.tsx           # home: estatísticas, lista, FAB
+│   ├── index.tsx           # home: estatísticas, lista, filtro Quero ouvir, FAB
 │   ├── search.tsx          # busca no Spotify
-│   ├── album/[id].tsx      # detalhe: média, resenhas, avaliar
+│   ├── album/[id].tsx      # detalhe: média, resenhas, avaliar, quero ouvir, ouvir hoje
+│   ├── diary.tsx           # Meu Diário: timeline de escutas agrupada por mês
 │   ├── login.tsx           # entrada na conta
 │   ├── register.tsx        # cadastro
-│   └── profile.tsx         # perfil: avaliações do usuário, logout
+│   └── profile.tsx         # perfil: avaliações do usuário, Meu Diário, logout
 ├── components/
 │   ├── AlbumCard.tsx       # card de álbum nas listas
 │   ├── StarRating.tsx      # avaliação por estrelas com meio-ponto
