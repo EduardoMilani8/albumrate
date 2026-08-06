@@ -96,6 +96,12 @@ export default function ProfileScreen() {
         </View>
       </View>
 
+      <Pressable style={styles.diaryButton} onPress={() => router.push('/lists')}>
+        <Ionicons name="list-outline" size={18} color={colors.text} />
+        <Text style={styles.diaryButtonText}>Minhas listas</Text>
+        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+      </Pressable>
+
       <Pressable style={styles.diaryButton} onPress={() => router.push('/diary')}>
         <Ionicons name="book-outline" size={18} color={colors.text} />
         <Text style={styles.diaryButtonText}>Meu diário</Text>

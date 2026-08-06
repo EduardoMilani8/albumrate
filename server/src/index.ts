@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit'
 import { authenticate } from './lib/auth.js'
 import authRouter from './routes/auth.js'
 import listeningLogsRouter from './routes/listeningLogs.js'
+import listsRouter from './routes/lists.js'
 import reviewsRouter from './routes/reviews.js'
 
 const app = express()
@@ -34,6 +35,7 @@ app.use('/api/auth', authLimiter, authRouter)
 app.use('/api', authenticate)
 app.use('/api', reviewsRouter)
 app.use('/api', listeningLogsRouter)
+app.use('/api', listsRouter)
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Rota não encontrada.' })

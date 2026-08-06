@@ -97,3 +97,33 @@ export interface ListeningLogsResponse {
   months: ListeningLogMonth[]
   nextBefore: string | null
 }
+
+export interface AlbumListSummary {
+  id: string
+  name: string
+  description: string | null
+  isPublic: boolean
+  createdAt: string
+  updatedAt: string
+  albumCount: number
+  coverArtworkUrl: string | null
+}
+
+export interface ListAlbum {
+  id: string
+  albumId: string
+  albumTitle: string
+  albumArtist: string
+  albumArtworkUrl: string | null
+  position: number
+  createdAt: string
+}
+
+export interface AlbumListsResponse {
+  lists: AlbumListSummary[]
+}
+
+export interface AlbumListDetailResponse {
+  list: AlbumListSummary
+  albums: ListAlbum[]
+}

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import ReviewModal from '../../components/ReviewModal'
 import MediaReviewCard from '../../components/MediaReviewCard'
+import AddToListModal from '../../components/AddToListModal'
 import StarRating from '../../components/StarRating'
 import { colors, radius, spacing } from '../../constants/theme'
 import { api } from '../../lib/api'
@@ -39,6 +40,7 @@ export default function AlbumDetailScreen() {
   const [existing, setExisting] = useState(false)
   const [loading, setLoading] = useState(true)
   const [modalVisible, setModalVisible] = useState(false)
+  const [listModalVisible, setListModalVisible] = useState(false)
   const [justLogged, setJustLogged] = useState(false)
 
   const loadReviews = useCallback(async () => {
@@ -208,6 +210,11 @@ export default function AlbumDetailScreen() {
         </Text>
       </Pressable>
 
+      <Pressable style={styles.logButton} onPress={() => setListModalVisible(true)}>
+        <Ionicons name="list-outline" size={18} color={colors.text} />
+        <Text style={styles.logButtonText}>Adicionar a uma lista</Text>
+      </Pressable>
+
       {myReview ? (
         <View style={styles.myReviewCard}>
           <Text style={styles.sectionLabel}>Sua avaliação</Text>
@@ -300,6 +307,17 @@ export default function AlbumDetailScreen() {
         onClose={() => setModalVisible(false)}
         onSaved={handleSaved}
         onDeleted={handleDeleted}
+      />
+
+      <AddToListModal
+        visible={listModalVisible}
+        album={{
+          albumId: album.id,
+          albumTitle: album.title,
+          albumArtist: album.artist,
+          albumArtworkUrl: album.artworkUrl,
+        }}
+        onClose={() => setListModalVisible(false)}
       />
     </ScrollView>
   )

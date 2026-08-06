@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
-import { router } from 'expo-router'
-import { useEffect, useRef, useState } from 'react'
+import { router, useLocalSearchParams, useNavigation } from 'expo-router'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   StyleSheet,
@@ -12,15 +13,24 @@ import {
   View,
 } from 'react-native'
 import { colors, radius, spacing } from '../constants/theme'
+import { api } from '../lib/api'
 import { searchAlbums } from '../lib/spotify'
 import type { SpotifyAlbumResult } from '../lib/types'
 
 export default function SearchScreen() {
+  const params = useLocalSearchParams<{ listId?: string }>()
+  const listId = params.listId
+  const navigation = useNavigation()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SpotifyAlbumResult[]>([])
   const [loading, setLoading] = useState(false)
+  const [addingId, setAddingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ title: listId ? 'Adicionar à lista' : 'Buscar Álbum' })
+  }, [navigation, listId])
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current)
@@ -46,19 +56,38 @@ export default function SearchScreen() {
     }
   }, [query])
 
-  const handleSelect = (album: SpotifyAlbumResult) => {
-    router.replace({
-      pathname: '/album/[id]',
-      params: {
-        id: album.id,
-        title: album.title,
-        artist: album.artist,
-        artworkUrl: album.artworkUrl ?? '',
-        releaseDate: album.releaseDate ?? '',
-        genre: album.genre ?? '',
-        fromSearch: '1',
-      },
-    })
+  const handleSelect = async (album: SpotifyAlbumResult) => {
+    if (!listId) {
+      router.replace({
+        pathname: '/album/[id]',
+        params: {
+          id: album.id,
+          title: album.title,
+          artist: album.artist,
+          artworkUrl: album.artworkUrl ?? '',
+          releaseDate: album.releaseDate ?? '',
+          genre: album.genre ?? '',
+          fromSearch: '1',
+        },
+      })
+      return
+    }
+
+    if (addingId) return
+    setAddingId(album.id)
+    try {
+      await api.addListAlbum(listId, {
+        albumId: album.id,
+        albumTitle: album.title,
+        albumArtist: album.artist,
+        albumArtworkUrl: album.artworkUrl,
+      })
+      router.back()
+    } catch (err) {
+      Alert.alert('Erro', err instanceof Error ? err.message : 'Não foi possível adicionar.')
+    } finally {
+      setAddingId(null)
+    }
   }
 
   const year = (releaseDate: string | null) =>
@@ -112,6 +141,13 @@ export default function SearchScreen() {
                   <Text style={styles.subtitle}>{year(item.releaseDate)}</Text>
                 ) : null}
               </View>
+              {listId ? (
+                addingId === item.id ? (
+                  <ActivityIndicator color={colors.accent} />
+                ) : (
+                  <Ionicons name="add-circle-outline" size={22} color={colors.textMuted} />
+                )
+              ) : null}
             </Pressable>
           )}
           contentContainerStyle={styles.list}

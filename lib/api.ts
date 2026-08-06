@@ -1,8 +1,11 @@
 import type {
+  AlbumListDetailResponse,
+  AlbumListsResponse,
   AlbumReviewsResponse,
   AuthUser,
   ListeningLog,
   ListeningLogsResponse,
+  ListAlbum,
   MediaCondition,
   MediaType,
   MyReviewsResponse,
@@ -28,7 +31,7 @@ export class ApiError extends Error {
 }
 
 interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   body?: unknown
 }
 
@@ -143,5 +146,60 @@ export const api = {
 
   deleteListeningLog(id: string) {
     return request<void>(`/api/me/listening-logs/${id}`, { method: 'DELETE' })
+  },
+
+  myLists() {
+    return request<AlbumListsResponse>('/api/me/lists')
+  },
+
+  createList(payload: { name: string; description: string | null; isPublic: boolean }) {
+    return request<{ list: AlbumListsResponse['lists'][number] }>('/api/me/lists', {
+      method: 'POST',
+      body: payload,
+    })
+  },
+
+  getList(id: string) {
+    return request<AlbumListDetailResponse>(`/api/me/lists/${id}`)
+  },
+
+  updateList(
+    id: string,
+    payload: { name?: string; description?: string | null; isPublic?: boolean },
+  ) {
+    return request<{ list: AlbumListsResponse['lists'][number] }>(`/api/me/lists/${id}`, {
+      method: 'PATCH',
+      body: payload,
+    })
+  },
+
+  deleteList(id: string) {
+    return request<void>(`/api/me/lists/${id}`, { method: 'DELETE' })
+  },
+
+  addListAlbum(
+    listId: string,
+    payload: {
+      albumId: string
+      albumTitle: string
+      albumArtist: string
+      albumArtworkUrl?: string | null
+    },
+  ) {
+    return request<{ album: ListAlbum }>(`/api/me/lists/${listId}/albums`, {
+      method: 'POST',
+      body: payload,
+    })
+  },
+
+  removeListAlbum(listId: string, albumId: string) {
+    return request<void>(`/api/me/lists/${listId}/albums/${albumId}`, { method: 'DELETE' })
+  },
+
+  reorderListAlbums(listId: string, albumIds: string[]) {
+    return request<{ albums: ListAlbum[] }>(`/api/me/lists/${listId}/albums`, {
+      method: 'PUT',
+      body: { albumIds },
+    })
   },
 }

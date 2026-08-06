@@ -13,6 +13,7 @@ Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, em tema dark
 - **1 avaliação por usuário por álbum** (reavaliar edita, não duplica)
 - **Nota média de todos os usuários** + lista de resenhas na página do álbum
 - **Diário de escuta**: botão "Marcar como ouvido hoje" na página do álbum + timeline "Meu Diário" agrupada por mês, com remoção de registros
+- **Listas temáticas de álbuns**: crie listas públicas ou privadas, adicione/remova/reordene álbuns (botões sobe/desce) e adicione um álbum a uma lista direto da sua página. A capa da lista é a do primeiro álbum
 - **Cadastro/login** com e-mail e senha (JWT, token salvo no `expo-secure-store`)
 - **Perfil** com suas avaliações (mais recentes primeiro), remoção e logout
 - Status local: **avaliado** (`logged`) ou **quero ouvir** (`want_to_listen`), com filtro "Quero ouvir" na home (só marca quem ainda não avaliou)
@@ -98,16 +99,20 @@ albumrate/
 │   ├── _layout.tsx         # providers + Stack com rotas protegidas (login)
 │   ├── index.tsx           # home: estatísticas, lista, filtro Quero ouvir, FAB
 │   ├── search.tsx          # busca no Spotify
-│   ├── album/[id].tsx      # detalhe: média, resenhas, avaliar, quero ouvir, ouvir hoje
+│   ├── album/[id].tsx      # detalhe: média, resenhas, avaliar, quero ouvir, ouvir hoje, adicionar a lista
 │   ├── diary.tsx           # Meu Diário: timeline de escutas agrupada por mês
+│   ├── lists.tsx           # Minhas listas: criar/abrir listas temáticas
+│   ├── list/[id].tsx       # detalhe da lista: adicionar, remover, reordenar álbuns
 │   ├── login.tsx           # entrada na conta
 │   ├── register.tsx        # cadastro
-│   └── profile.tsx         # perfil: avaliações do usuário, Meu Diário, logout
+│   └── profile.tsx         # perfil: avaliações do usuário, Minhas listas, Meu Diário, logout
 ├── components/
 │   ├── AlbumCard.tsx       # card de álbum nas listas
 │   ├── StarRating.tsx      # avaliação por estrelas com meio-ponto
 │   ├── ReviewModal.tsx     # modal de avaliação (nota, resenha, data, mídia física)
-│   └── MediaReviewCard.tsx # card de avaliação de mídia física (dentro da resenha)
+│   ├── MediaReviewCard.tsx # card de avaliação de mídia física (dentro da resenha)
+│   ├── ListFormModal.tsx   # modal criar/editar lista (nome, descrição, público/privado)
+│   └── AddToListModal.tsx  # modal "Adicionar a uma lista" na página do álbum
 ├── constants/theme.ts      # tema dark: colors, spacing, radius
 ├── lib/
 │   ├── api.ts              # cliente HTTP do backend

@@ -1,6 +1,8 @@
 import {
+  boolean,
   date,
   index,
+  integer,
   pgTable,
   real,
   text,
@@ -79,6 +81,53 @@ export const listeningLogs = pgTable(
   ],
 )
 
+export const lists = pgTable(
+  'lists',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    description: text('description'),
+    isPublic: boolean('is_public').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index('lists_user_idx').on(table.userId)],
+)
+
+export const listAlbums = pgTable(
+  'list_albums',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    listId: uuid('list_id')
+      .notNull()
+      .references(() => lists.id, { onDelete: 'cascade' }),
+    albumId: text('album_id').notNull(),
+    albumTitle: text('album_title').notNull(),
+    albumArtist: text('album_artist').notNull(),
+    albumArtworkUrl: text('album_artwork_url'),
+    position: integer('position').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('list_albums_list_album_unique').on(table.listId, table.albumId),
+    index('list_albums_list_position_idx').on(table.listId, table.position),
+  ],
+)
+
+export const listsRelations = relations(lists, ({ many }) => ({
+  albums: many(listAlbums),
+}))
+
+export const listAlbumsRelations = relations(listAlbums, ({ one }) => ({
+  list: one(lists, {
+    fields: [listAlbums.listId],
+    references: [lists.id],
+  }),
+}))
+
 export const reviewsRelations = relations(reviews, ({ one }) => ({
   mediaReview: one(mediaReviews, {
     fields: [reviews.id],
@@ -93,3 +142,7 @@ export type MediaReview = typeof mediaReviews.$inferSelect
 export type NewMediaReview = typeof mediaReviews.$inferInsert
 export type ListeningLog = typeof listeningLogs.$inferSelect
 export type NewListeningLog = typeof listeningLogs.$inferInsert
+export type AlbumList = typeof lists.$inferSelect
+export type NewAlbumList = typeof lists.$inferInsert
+export type ListAlbum = typeof listAlbums.$inferSelect
+export type NewListAlbum = typeof listAlbums.$inferInsert

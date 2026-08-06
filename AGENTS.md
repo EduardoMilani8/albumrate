@@ -3,7 +3,7 @@
 ## Project
 
 - **Albumrate** — Expo SDK 57 (React Native 0.86, React 19) + TypeScript (strict) + expo-router + expo-sqlite.
-- App de avaliação de álbuns: busca no Spotify, nota em estrelas (meio-ponto), resenha, data ouvida, perfil, persistência local em SQLite, tema dark. Inclui **avaliação opcional de mídia física** (vinil/CD/cassete/digital, qualidade da prensagem, condição) e **diário de escuta** (`listening_logs`) para registrar releituras por data.
+- App de avaliação de álbuns: busca no Spotify, nota em estrelas (meio-ponto), resenha, data ouvida, perfil, persistência local em SQLite, tema dark. Inclui **avaliação opcional de mídia física** (vinil/CD/cassete/digital, qualidade da prensagem, condição), **diário de escuta** (`listening_logs`) para registrar releituras por data e **listas temáticas de álbuns** (públicas/privadas, com reordenação).
 - **Avaliações e usuários vivem num backend** (`server/`): Node/Express + Postgres (Drizzle) + JWT + bcrypt. O app autentica com e-mail/senha e busca reviews via API.
 - **Backend em produção:** Railway (`albumrate-production.up.railway.app`) — ver "Deploy" abaixo.
 
@@ -36,11 +36,11 @@ JWT_SECRET=...
 
 ## Structure
 
-- `app/` — rotas expo-router (`_layout.tsx`, `index.tsx`, `search.tsx`, `album/[id].tsx`, `diary.tsx`, `login.tsx`, `register.tsx`, `profile.tsx`)
-- `components/` — `AlbumCard`, `StarRating`, `ReviewModal`, `MediaReviewCard`
+- `app/` — rotas expo-router (`_layout.tsx`, `index.tsx`, `search.tsx`, `album/[id].tsx`, `diary.tsx`, `lists.tsx`, `list/[id].tsx`, `login.tsx`, `register.tsx`, `profile.tsx`)
+- `components/` — `AlbumCard`, `StarRating`, `ReviewModal`, `MediaReviewCard`, `ListFormModal`, `AddToListModal`
 - `constants/` — `theme.ts` (colors/spacing/radius dark; usar sempre)
 - `lib/` — `db.ts` (SQLite local, só status `logged`/`want_to_listen`), `spotify.ts` (API), `types.ts`, `api.ts` (cliente HTTP do backend), `auth.tsx` (AuthContext + SecureStore)
-- `server/` — API Node/Express + Postgres (Drizzle): `src/schema.ts`, `src/routes/{auth,reviews,listeningLogs}.ts`, `src/lib/dates.ts` (helpers de data), `src/migrate.ts`, `drizzle/` (migrações geradas), `Dockerfile`, `.dockerignore`
+- `server/` — API Node/Express + Postgres (Drizzle): `src/schema.ts`, `src/routes/{auth,reviews,listeningLogs,lists}.ts`, `src/lib/dates.ts` (helpers de data), `src/migrate.ts`, `drizzle/` (migrações geradas), `Dockerfile`, `.dockerignore`
 - `metro.config.js` — `.wasm` como asset + headers COEP/COOP (expo-sqlite web)
 
 ## Conventions
@@ -48,6 +48,7 @@ JWT_SECRET=...
 - Siga o tema de `constants/theme.ts` em toda UI (dark).
 - `App` é **expo-router**: arquivos vão em `app/`, e `"main": "expo-router/entry"` no package.json (não criar `App.tsx` na raiz).
 - **Reviews/notas ficam no backend.** O SQLite local só guarda a lista "Meus Álbuns" com status (`logged`/`want_to_listen`). As colunas `rating`/`review` da tabela local são legadas.
+- **Listas temáticas também vivem no backend** (`lists`/`list_albums` no Postgres). A capa da lista é calculada do primeiro álbum (não há coluna de capa). Reordenação usa botões subir/descer (sem lib de drag-and-drop).
 - Rotas do app são protegidas com `Stack.Protected` em `app/_layout.tsx` (guarda de login). Token JWT no `expo-secure-store`.
 - Imports de caminho relativo (ex.: `../constants/theme`). O alias `@/*` existe no tsconfig.
 - Commits em português, estilo dos existentes.
