@@ -1,6 +1,8 @@
 import type {
   AlbumReviewsResponse,
   AuthUser,
+  ListeningLog,
+  ListeningLogsResponse,
   MediaCondition,
   MediaType,
   MyReviewsResponse,
@@ -119,5 +121,27 @@ export const api = {
 
   myReviews() {
     return request<MyReviewsResponse>('/api/me/reviews')
+  },
+
+  createListeningLog(payload: {
+    albumId: string
+    albumTitle: string
+    albumArtist: string
+    albumArtworkUrl?: string | null
+  }) {
+    return request<{ log: ListeningLog }>('/api/me/listening-logs', {
+      method: 'POST',
+      body: payload,
+    })
+  },
+
+  myListeningLogs(before?: string) {
+    return request<ListeningLogsResponse>(
+      `/api/me/listening-logs${before ? `?before=${encodeURIComponent(before)}` : ''}`,
+    )
+  },
+
+  deleteListeningLog(id: string) {
+    return request<void>(`/api/me/listening-logs/${id}`, { method: 'DELETE' })
   },
 }

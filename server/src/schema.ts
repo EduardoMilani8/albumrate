@@ -59,6 +59,26 @@ export const mediaReviews = pgTable(
   (table) => [uniqueIndex('media_reviews_review_unique').on(table.reviewId)],
 )
 
+export const listeningLogs = pgTable(
+  'listening_logs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    albumId: text('album_id').notNull(),
+    albumTitle: text('album_title').notNull(),
+    albumArtist: text('album_artist').notNull(),
+    albumArtworkUrl: text('album_artwork_url'),
+    listenedAt: date('listened_at', { mode: 'string' }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('listening_logs_user_idx').on(table.userId),
+    index('listening_logs_album_idx').on(table.albumId),
+  ],
+)
+
 export const reviewsRelations = relations(reviews, ({ one }) => ({
   mediaReview: one(mediaReviews, {
     fields: [reviews.id],
@@ -71,3 +91,5 @@ export type Review = typeof reviews.$inferSelect
 export type NewReview = typeof reviews.$inferInsert
 export type MediaReview = typeof mediaReviews.$inferSelect
 export type NewMediaReview = typeof mediaReviews.$inferInsert
+export type ListeningLog = typeof listeningLogs.$inferSelect
+export type NewListeningLog = typeof listeningLogs.$inferInsert

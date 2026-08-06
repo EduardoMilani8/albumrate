@@ -39,6 +39,7 @@ export default function AlbumDetailScreen() {
   const [existing, setExisting] = useState(false)
   const [loading, setLoading] = useState(true)
   const [modalVisible, setModalVisible] = useState(false)
+  const [justLogged, setJustLogged] = useState(false)
 
   const loadReviews = useCallback(async () => {
     try {
@@ -101,6 +102,22 @@ export default function AlbumDetailScreen() {
 
   const handleDeleted = async () => {
     await loadReviews()
+  }
+
+  const handleLogListening = async () => {
+    if (!album) return
+    try {
+      await api.createListeningLog({
+        albumId: album.id,
+        albumTitle: album.title,
+        albumArtist: album.artist,
+        albumArtworkUrl: album.artworkUrl,
+      })
+      setJustLogged(true)
+      setTimeout(() => setJustLogged(false), 2000)
+    } catch (err) {
+      Alert.alert('Erro', err instanceof Error ? err.message : 'Não foi possível registrar.')
+    }
   }
 
   const saveWantToListen = async () => {
@@ -180,6 +197,17 @@ export default function AlbumDetailScreen() {
         <Text style={styles.primaryButtonText}>{myReview ? 'Editar minha avaliação' : 'Avaliar álbum'}</Text>
       </Pressable>
 
+      <Pressable style={styles.logButton} onPress={handleLogListening} disabled={justLogged}>
+        <Ionicons
+          name={justLogged ? 'checkmark-circle' : 'today-outline'}
+          size={18}
+          color={justLogged ? colors.success : colors.text}
+        />
+        <Text style={[styles.logButtonText, justLogged && styles.logButtonTextDone]}>
+          {justLogged ? 'Registrado hoje' : 'Marcar como ouvido hoje'}
+        </Text>
+      </Pressable>
+
       {myReview ? (
         <View style={styles.myReviewCard}>
           <Text style={styles.sectionLabel}>Sua avaliação</Text>
@@ -230,12 +258,31 @@ export default function AlbumDetailScreen() {
       <View style={styles.divider} />
 
       <Text style={styles.sectionLabel}>Na sua lista</Text>
-      <Pressable style={styles.secondaryButton} onPress={saveWantToListen}>
-        <Ionicons name="headset-outline" size={18} color={colors.text} />
-        <Text style={styles.secondaryButtonText}>
-          {album.status === 'want_to_listen' ? 'Marcado: quero ouvir' : 'Marcar como quero ouvir'}
-        </Text>
-      </Pressable>
+      {!myReview ? (
+        <Pressable
+          style={[
+            styles.secondaryButton,
+            album.status === 'want_to_listen' && styles.secondaryButtonActive,
+          ]}
+          onPress={saveWantToListen}
+        >
+          <Ionicons
+            name="headset-outline"
+            size={18}
+            color={album.status === 'want_to_listen' ? colors.accent : colors.text}
+          />
+          <Text
+            style={[
+              styles.secondaryButtonText,
+              album.status === 'want_to_listen' && styles.secondaryButtonTextActive,
+            ]}
+          >
+            {album.status === 'want_to_listen'
+              ? 'Na lista: quero ouvir'
+              : 'Marcar como quero ouvir'}
+          </Text>
+        </Pressable>
+      ) : null}
       {existing ? (
         <Pressable style={styles.deleteButton} onPress={removeAlbum}>
           <Ionicons name="trash-outline" size={16} color={colors.accent} />
@@ -321,6 +368,26 @@ const styles = StyleSheet.create({
     color: colors.background,
     fontSize: 16,
     fontWeight: '700',
+  },
+  logButton: {
+    alignSelf: 'stretch',
+    height: 44,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  logButtonText: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  logButtonTextDone: {
+    color: colors.success,
   },
   myReviewCard: {
     alignSelf: 'stretch',
@@ -409,6 +476,14 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 16,
     fontWeight: '600',
+  },
+  secondaryButtonActive: {
+    borderColor: colors.accent,
+    backgroundColor: colors.accentMuted,
+  },
+  secondaryButtonTextActive: {
+    color: colors.accent,
+    fontWeight: '700',
   },
   deleteButton: {
     alignSelf: 'stretch',

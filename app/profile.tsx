@@ -96,6 +96,12 @@ export default function ProfileScreen() {
         </View>
       </View>
 
+      <Pressable style={styles.diaryButton} onPress={() => router.push('/diary')}>
+        <Ionicons name="book-outline" size={18} color={colors.text} />
+        <Text style={styles.diaryButtonText}>Meu diário</Text>
+        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+      </Pressable>
+
       {loading ? (
         <ActivityIndicator color={colors.accent} style={styles.loading} />
       ) : (
@@ -225,6 +231,25 @@ const styles = StyleSheet.create({
   },
   loading: {
     flex: 1,
+  },
+  diaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
+    height: 48,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  diaryButtonText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '600',
   },
   list: {
     padding: spacing.md,

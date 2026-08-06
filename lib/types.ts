@@ -77,3 +77,23 @@ export interface AlbumReviewsResponse {
 export interface MyReviewsResponse {
   reviews: Review[]
 }
+
+export interface ListeningLog {
+  id: string
+  albumId: string
+  albumTitle: string
+  albumArtist: string
+  albumArtworkUrl: string | null
+  listenedAt: string
+  createdAt: string
+}
+
+export interface ListeningLogMonth {
+  yearMonth: string
+  logs: ListeningLog[]
+}
+
+export interface ListeningLogsResponse {
+  months: ListeningLogMonth[]
+  nextBefore: string | null
+}

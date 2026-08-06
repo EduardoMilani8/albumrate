@@ -15,6 +15,13 @@
       "when": 1786042654388,
       "tag": "0001_right_rage",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786044882639,
+      "tag": "0002_medical_tempest",
+      "breakpoints": true
     }
   ]
 }

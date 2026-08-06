@@ -70,6 +70,7 @@ function RootNavigator() {
             options={{ title: 'Buscar Álbum', presentation: 'modal' }}
           />
           <Stack.Screen name="album/[id]" options={{ title: '' }} />
+          <Stack.Screen name="diary" options={{ title: 'Meu Diário' }} />
           <Stack.Screen name="profile" options={{ title: 'Perfil' }} />
         </Stack.Protected>
         <Stack.Protected guard={!user}>

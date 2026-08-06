@@ -14,6 +14,7 @@ export default function IndexScreen() {
   const [albums, setAlbums] = useState<LoggedAlbum[]>([])
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState<'all' | 'want_to_listen'>('all')
 
   useFocusEffect(
     useCallback(() => {
@@ -43,6 +44,10 @@ export default function IndexScreen() {
   )
 
   const logged = albums.filter((album) => album.status === 'logged')
+  const visibleAlbums =
+    filter === 'want_to_listen'
+      ? albums.filter((album) => album.status === 'want_to_listen')
+      : albums
   const average =
     reviews.length === 0
       ? null
@@ -62,11 +67,28 @@ export default function IndexScreen() {
         </View>
       </View>
 
+      <View style={styles.segmented}>
+        {(['all', 'want_to_listen'] as const).map((key) => {
+          const active = filter === key
+          return (
+            <Pressable
+              key={key}
+              style={[styles.segment, active && styles.segmentActive]}
+              onPress={() => setFilter(key)}
+            >
+              <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
+                {key === 'all' ? 'Todos' : 'Quero ouvir'}
+              </Text>
+            </Pressable>
+          )
+        })}
+      </View>
+
       {loading ? (
         <ActivityIndicator color={colors.accent} style={styles.loading} />
       ) : (
         <FlatList
-          data={albums}
+          data={visibleAlbums}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => {
             const myRating = reviews.find((review) => review.albumId === item.id)?.rating ?? null
@@ -83,7 +105,9 @@ export default function IndexScreen() {
             <View style={styles.empty}>
               <Ionicons name="disc-outline" size={56} color={colors.textMuted} />
               <Text style={styles.emptyText}>
-                Nenhum álbum por aqui ainda. Toque no + para buscar e avaliar.
+                {filter === 'want_to_listen'
+                  ? 'Nenhum álbum marcado como quero ouvir ainda.'
+                  : 'Nenhum álbum por aqui ainda. Toque no + para buscar e avaliar.'}
               </Text>
             </View>
           }
@@ -129,6 +153,35 @@ const styles = StyleSheet.create({
     width: 1,
     alignSelf: 'stretch',
     backgroundColor: colors.border,
+  },
+  segmented: {
+    flexDirection: 'row',
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    padding: 4,
+    gap: 4,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  segment: {
+    flex: 1,
+    height: 36,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentActive: {
+    backgroundColor: colors.accentMuted,
+  },
+  segmentText: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  segmentTextActive: {
+    color: colors.text,
   },
   list: {
     padding: spacing.md,
