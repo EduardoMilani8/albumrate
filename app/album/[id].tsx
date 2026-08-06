@@ -5,6 +5,7 @@ import { useSQLiteContext } from 'expo-sqlite'
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import ReviewModal from '../../components/ReviewModal'
+import MediaReviewCard from '../../components/MediaReviewCard'
 import StarRating from '../../components/StarRating'
 import { colors, radius, spacing } from '../../constants/theme'
 import { api } from '../../lib/api'
@@ -191,6 +192,9 @@ export default function AlbumDetailScreen() {
           {myReview.reviewText ? (
             <Text style={styles.reviewText}>{myReview.reviewText}</Text>
           ) : null}
+          {myReview.mediaReview ? (
+            <MediaReviewCard mediaReview={myReview.mediaReview} />
+          ) : null}
           <Pressable style={styles.editLink} onPress={() => setModalVisible(true)}>
             <Ionicons name="create-outline" size={14} color={colors.accent} />
             <Text style={styles.editLinkText}>Editar</Text>
@@ -214,6 +218,9 @@ export default function AlbumDetailScreen() {
               <StarRating rating={review.rating} size={14} readOnly />
               {review.reviewText ? (
                 <Text style={styles.reviewText}>{review.reviewText}</Text>
+              ) : null}
+              {review.mediaReview ? (
+                <MediaReviewCard mediaReview={review.mediaReview} />
               ) : null}
             </View>
           ))}

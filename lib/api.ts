@@ -1,4 +1,11 @@
-import type { AlbumReviewsResponse, AuthUser, MyReviewsResponse, Review } from './types'
+import type {
+  AlbumReviewsResponse,
+  AuthUser,
+  MediaCondition,
+  MediaType,
+  MyReviewsResponse,
+  Review,
+} from './types'
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080'
 const REQUEST_TIMEOUT_MS = 20000
@@ -92,6 +99,12 @@ export const api = {
       albumTitle: string
       albumArtist: string
       albumArtworkUrl?: string | null
+      mediaReview?: {
+        mediaType: MediaType
+        pressingQualityRating: number
+        editionNote: string | null
+        condition: MediaCondition
+      } | null
     },
   ) {
     return request<{ review: Review }>(`/api/albums/${albumId}/reviews/me`, {

@@ -1,9 +1,10 @@
-import { and, avg, count, desc, eq } from 'drizzle-orm'
+import { and, avg, count, desc, eq, inArray } from 'drizzle-orm'
 import { Router } from 'express'
 import { z } from 'zod'
 import { db } from '../db.js'
 import { type AuthedRequest } from '../lib/auth.js'
-import { reviews, users } from '../schema.js'
+import { mediaReviews, reviews, users } from '../schema.js'
+import type { MediaReview } from '../schema.js'
 
 const router = Router()
 
@@ -45,6 +46,31 @@ const ratingSchema = z
   .max(RATING_MAX, 'A nota máxima é 5.')
   .refine((value) => (value * 2) % 1 === 0, 'A nota deve ser múltipla de 0,5.')
 
+const mediaTypeSchema = z.enum(['vinil', 'cd', 'cassete', 'digital'], {
+  error: 'Tipo de mídia inválido.',
+})
+
+const conditionSchema = z.enum(['novo', 'usado', 'desgastado'], {
+  error: 'Condição da mídia inválida.',
+})
+
+const mediaReviewSchema = z.object({
+  mediaType: mediaTypeSchema,
+  pressingQualityRating: z
+    .number()
+    .min(1, 'A nota da mídia deve ser de 1 a 5.')
+    .max(5, 'A nota da mídia deve ser de 1 a 5.')
+    .refine((value) => (value * 2) % 1 === 0, 'A nota da mídia deve ser múltipla de 0,5.'),
+  editionNote: z
+    .string()
+    .trim()
+    .max(200, 'A edição/prensagem deve ter no máximo 200 caracteres.')
+    .nullable()
+    .optional()
+    .transform((value) => value || null),
+  condition: conditionSchema,
+})
+
 const reviewSchema = z.object({
   rating: ratingSchema,
   reviewText: z
@@ -63,22 +89,37 @@ const reviewSchema = z.object({
   albumTitle: z.string().trim().max(200).default(''),
   albumArtist: z.string().trim().max(200).default(''),
   albumArtworkUrl: z.string().url().max(500).nullable().optional(),
+  mediaReview: mediaReviewSchema.nullable().optional(),
 })
 
-function toReviewJson(review: {
-  id: string
-  albumId: string
-  albumTitle: string
-  albumArtist: string
-  albumArtworkUrl: string | null
-  rating: number
-  reviewText: string | null
-  listenedAt: string
-  createdAt: Date
-  updatedAt: Date
-  userEmail?: string
-  userName?: string | null
-}) {
+function mediaReviewJson(media: MediaReview) {
+  return {
+    id: media.id,
+    mediaType: media.mediaType,
+    pressingQualityRating: media.pressingQualityRating,
+    editionNote: media.editionNote,
+    condition: media.condition,
+    createdAt: media.createdAt.toISOString(),
+  }
+}
+
+function toReviewJson(
+  review: {
+    id: string
+    albumId: string
+    albumTitle: string
+    albumArtist: string
+    albumArtworkUrl: string | null
+    rating: number
+    reviewText: string | null
+    listenedAt: string
+    createdAt: Date
+    updatedAt: Date
+    userEmail?: string
+    userName?: string | null
+  },
+  media?: MediaReview | null,
+) {
   return {
     id: review.id,
     albumId: review.albumId,
@@ -90,6 +131,7 @@ function toReviewJson(review: {
     listenedAt: review.listenedAt,
     createdAt: review.createdAt.toISOString(),
     updatedAt: review.updatedAt.toISOString(),
+    mediaReview: media ? mediaReviewJson(media) : null,
     user: review.userEmail
       ? { email: review.userEmail, name: review.userName ?? null }
       : undefined,
@@ -145,7 +187,34 @@ router.put('/albums/:albumId/reviews/me', async (req: AuthedRequest, res) => {
     res.status(500).json({ error: 'Não foi possível salvar a avaliação.' })
     return
   }
-  res.status(200).json({ review: toReviewJson(saved) })
+
+  let media: MediaReview | null = null
+  if (data.mediaReview) {
+    const [upserted] = await db
+      .insert(mediaReviews)
+      .values({
+        reviewId: saved.id,
+        mediaType: data.mediaReview.mediaType,
+        pressingQualityRating: data.mediaReview.pressingQualityRating,
+        editionNote: data.mediaReview.editionNote ?? null,
+        condition: data.mediaReview.condition,
+      })
+      .onConflictDoUpdate({
+        target: mediaReviews.reviewId,
+        set: {
+          mediaType: data.mediaReview.mediaType,
+          pressingQualityRating: data.mediaReview.pressingQualityRating,
+          editionNote: data.mediaReview.editionNote ?? null,
+          condition: data.mediaReview.condition,
+        },
+      })
+      .returning()
+    media = upserted ?? null
+  } else if (data.mediaReview === null) {
+    await db.delete(mediaReviews).where(eq(mediaReviews.reviewId, saved.id))
+  }
+
+  res.status(200).json({ review: toReviewJson(saved, media) })
 })
 
 router.delete('/albums/:albumId/reviews/me', async (req: AuthedRequest, res) => {
@@ -195,6 +264,15 @@ router.get('/albums/:albumId/reviews', async (req: AuthedRequest, res) => {
     .where(eq(reviews.albumId, albumId))
     .orderBy(desc(reviews.createdAt))
 
+  const reviewIds = rows.map((row) => row.id)
+  const mediaRows = reviewIds.length
+    ? await db
+        .select()
+        .from(mediaReviews)
+        .where(inArray(mediaReviews.reviewId, reviewIds))
+    : []
+  const mediaByReviewId = new Map(mediaRows.map((row) => [row.reviewId, row]))
+
   const [avgRow] = await db
     .select({ average: avg(reviews.rating), total: count() })
     .from(reviews)
@@ -206,8 +284,8 @@ router.get('/albums/:albumId/reviews', async (req: AuthedRequest, res) => {
     albumId,
     average: avgRow?.average ? Number(Number(avgRow.average).toFixed(2)) : null,
     count: avgRow?.total ?? 0,
-    reviews: rows.map(toReviewJson),
-    myReview: myReview ? toReviewJson(myReview) : null,
+    reviews: rows.map((row) => toReviewJson(row, mediaByReviewId.get(row.id))),
+    myReview: myReview ? toReviewJson(myReview, mediaByReviewId.get(myReview.id)) : null,
   })
 })
 
@@ -220,7 +298,16 @@ router.get('/me/reviews', async (req: AuthedRequest, res) => {
     .where(eq(reviews.userId, userId))
     .orderBy(desc(reviews.createdAt))
 
-  res.json({ reviews: rows.map(toReviewJson) })
+  const reviewIds = rows.map((row) => row.id)
+  const mediaRows = reviewIds.length
+    ? await db
+        .select()
+        .from(mediaReviews)
+        .where(inArray(mediaReviews.reviewId, reviewIds))
+    : []
+  const mediaByReviewId = new Map(mediaRows.map((row) => [row.reviewId, row]))
+
+  res.json({ reviews: rows.map((row) => toReviewJson(row, mediaByReviewId.get(row.id))) })
 })
 
 export default router

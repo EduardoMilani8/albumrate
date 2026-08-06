@@ -33,6 +33,19 @@ export interface AuthUser {
   name: string | null
 }
 
+export type MediaType = 'vinil' | 'cd' | 'cassete' | 'digital'
+
+export type MediaCondition = 'novo' | 'usado' | 'desgastado'
+
+export interface MediaReview {
+  id: string
+  mediaType: MediaType
+  pressingQualityRating: number
+  editionNote: string | null
+  condition: MediaCondition
+  createdAt: string
+}
+
 export interface ReviewUser {
   email: string
   name: string | null
@@ -49,6 +62,7 @@ export interface Review {
   listenedAt: string
   createdAt: string
   updatedAt: string
+  mediaReview?: MediaReview | null
   user?: ReviewUser
 }
 

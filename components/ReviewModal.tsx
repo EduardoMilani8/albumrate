@@ -1,6 +1,7 @@
 import DateTimePicker, {
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker'
+import { Ionicons } from '@expo/vector-icons'
 import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
@@ -15,8 +16,21 @@ import {
 } from 'react-native'
 import { colors, radius, spacing } from '../constants/theme'
 import { api } from '../lib/api'
-import type { Review } from '../lib/types'
+import type { MediaCondition, MediaType, Review } from '../lib/types'
 import StarRating from './StarRating'
+
+const MEDIA_OPTIONS = [
+  { value: 'vinil', label: 'Vinil' },
+  { value: 'cd', label: 'CD' },
+  { value: 'cassete', label: 'Cassete' },
+  { value: 'digital', label: 'Digital' },
+] as const
+
+const CONDITION_OPTIONS = [
+  { value: 'novo', label: 'Novo' },
+  { value: 'usado', label: 'Usado' },
+  { value: 'desgastado', label: 'Desgastado' },
+] as const
 
 interface ReviewModalProps {
   visible: boolean
@@ -61,6 +75,11 @@ export default function ReviewModal({
   const [showPicker, setShowPicker] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hasMedia, setHasMedia] = useState(false)
+  const [mediaType, setMediaType] = useState<MediaType | null>(null)
+  const [mediaQuality, setMediaQuality] = useState<number | null>(null)
+  const [editionNote, setEditionNote] = useState('')
+  const [mediaCondition, setMediaCondition] = useState<MediaCondition | null>(null)
 
   const editing = initialReview !== null
 
@@ -72,6 +91,11 @@ export default function ReviewModal({
       setShowPicker(false)
       setError(null)
       setSaving(false)
+      setHasMedia(initialReview?.mediaReview != null)
+      setMediaType(initialReview?.mediaReview?.mediaType ?? null)
+      setMediaQuality(initialReview?.mediaReview?.pressingQualityRating ?? null)
+      setEditionNote(initialReview?.mediaReview?.editionNote ?? '')
+      setMediaCondition(initialReview?.mediaReview?.condition ?? null)
     }
   }, [visible, initialReview])
 
@@ -86,6 +110,20 @@ export default function ReviewModal({
       setError('Escolha uma nota de 0,5 a 5 estrelas.')
       return
     }
+    if (hasMedia) {
+      if (!mediaType) {
+        setError('Escolha o tipo de mídia física.')
+        return
+      }
+      if (mediaQuality === null) {
+        setError('Dê uma nota de 1 a 5 para a qualidade do master/prensagem.')
+        return
+      }
+      if (!mediaCondition) {
+        setError('Escolha a condição da mídia física.')
+        return
+      }
+    }
     setSaving(true)
     setError(null)
     try {
@@ -96,6 +134,15 @@ export default function ReviewModal({
         albumTitle,
         albumArtist,
         albumArtworkUrl,
+        mediaReview:
+          hasMedia && mediaType && mediaQuality !== null && mediaCondition
+            ? {
+                mediaType,
+                pressingQualityRating: mediaQuality,
+                editionNote: editionNote.trim() || null,
+                condition: mediaCondition,
+              }
+            : null,
       })
       onSaved(review)
       onClose()
@@ -172,6 +219,78 @@ export default function ReviewModal({
               </Pressable>
             </View>
           ) : null}
+
+          <View style={styles.mediaSection}>
+            <Text style={styles.sectionLabel}>Avaliar mídia física (opcional)</Text>
+            <Pressable style={styles.mediaToggle} onPress={() => setHasMedia((value) => !value)}>
+              <Ionicons
+                name={hasMedia ? 'checkbox' : 'square-outline'}
+                size={20}
+                color={hasMedia ? colors.accent : colors.textMuted}
+              />
+              <Text style={styles.mediaToggleText}>Tenho a mídia física deste álbum</Text>
+            </Pressable>
+
+            {hasMedia ? (
+              <View style={styles.mediaFields}>
+                <Text style={styles.subLabel}>Tipo de mídia</Text>
+                <View style={styles.chipRow}>
+                  {MEDIA_OPTIONS.map((option) => {
+                    const selected = mediaType === option.value
+                    return (
+                      <Pressable
+                        key={option.value}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => setMediaType(option.value)}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    )
+                  })}
+                </View>
+
+                <Text style={styles.subLabel}>Qualidade do master/prensagem</Text>
+                <View style={styles.qualityRow}>
+                  <StarRating
+                    rating={mediaQuality}
+                    onChange={(value) => setMediaQuality(Math.max(1, value))}
+                    size={28}
+                  />
+                  {mediaQuality !== null ? (
+                    <Text style={styles.mediaQualityValue}>{mediaQuality.toFixed(1)}</Text>
+                  ) : null}
+                </View>
+
+                <TextInput
+                  style={styles.editionInput}
+                  value={editionNote}
+                  onChangeText={setEditionNote}
+                  placeholder="Edição/prensagem (ex.: 1ª prensagem 1979, reedição colorida)"
+                  placeholderTextColor={colors.textMuted}
+                />
+
+                <Text style={styles.subLabel}>Condição</Text>
+                <View style={styles.chipRow}>
+                  {CONDITION_OPTIONS.map((option) => {
+                    const selected = mediaCondition === option.value
+                    return (
+                      <Pressable
+                        key={option.value}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => setMediaCondition(option.value)}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    )
+                  })}
+                </View>
+              </View>
+            ) : null}
+          </View>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -273,6 +392,77 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontSize: 15,
     fontWeight: '600',
+  },
+  mediaSection: {
+    alignSelf: 'stretch',
+    gap: spacing.sm,
+  },
+  mediaToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  mediaToggleText: {
+    color: colors.text,
+    fontSize: 15,
+  },
+  mediaFields: {
+    gap: spacing.sm,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  subLabel: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  chip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  chipSelected: {
+    borderColor: colors.accent,
+    backgroundColor: colors.accentMuted,
+  },
+  chipText: {
+    color: colors.textMuted,
+    fontSize: 14,
+  },
+  chipTextSelected: {
+    color: colors.text,
+    fontWeight: '600',
+  },
+  qualityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  mediaQualityValue: {
+    color: colors.star,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  editionInput: {
+    alignSelf: 'stretch',
+    minHeight: 44,
+    color: colors.text,
+    backgroundColor: colors.background,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    fontSize: 15,
   },
   error: {
     color: colors.accent,

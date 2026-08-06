@@ -8,6 +8,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
+import { relations } from 'drizzle-orm'
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -42,6 +43,31 @@ export const reviews = pgTable(
   ],
 )
 
+export const mediaReviews = pgTable(
+  'media_reviews',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    reviewId: uuid('review_id')
+      .notNull()
+      .references(() => reviews.id, { onDelete: 'cascade' }),
+    mediaType: text('media_type').notNull(),
+    pressingQualityRating: real('pressing_quality_rating').notNull(),
+    editionNote: text('edition_note'),
+    condition: text('condition').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex('media_reviews_review_unique').on(table.reviewId)],
+)
+
+export const reviewsRelations = relations(reviews, ({ one }) => ({
+  mediaReview: one(mediaReviews, {
+    fields: [reviews.id],
+    references: [mediaReviews.reviewId],
+  }),
+}))
+
 export type User = typeof users.$inferSelect
 export type Review = typeof reviews.$inferSelect
 export type NewReview = typeof reviews.$inferInsert
+export type MediaReview = typeof mediaReviews.$inferSelect
+export type NewMediaReview = typeof mediaReviews.$inferInsert
