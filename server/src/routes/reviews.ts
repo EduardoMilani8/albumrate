@@ -71,6 +71,27 @@ const reviewSchema = z.object({
   albumTitle: z.string().trim().max(200).default(''),
   albumArtist: z.string().trim().max(200).default(''),
   albumArtworkUrl: z.string().url().max(500).nullable().optional(),
+  albumGenre: z
+    .string()
+    .trim()
+    .max(100, 'O gênero deve ter no máximo 100 caracteres.')
+    .nullable()
+    .optional()
+    .transform((value) => value || null),
+  albumYear: z
+    .number()
+    .int()
+    .min(1900, 'Ano do álbum inválido.')
+    .max(2100, 'Ano do álbum inválido.')
+    .nullable()
+    .optional(),
+  albumCountry: z
+    .string()
+    .trim()
+    .max(3, 'País do artista inválido.')
+    .nullable()
+    .optional()
+    .transform((value) => value || null),
   mediaReview: mediaReviewSchema.nullable().optional(),
 })
 
@@ -146,6 +167,9 @@ router.put('/albums/:albumId/reviews/me', async (req: AuthedRequest, res) => {
       albumTitle: data.albumTitle,
       albumArtist: data.albumArtist,
       albumArtworkUrl: data.albumArtworkUrl ?? null,
+      albumGenre: data.albumGenre ?? null,
+      albumYear: data.albumYear ?? null,
+      albumCountry: data.albumCountry ?? null,
       rating: data.rating,
       reviewText: data.reviewText ?? null,
       listenedAt,
@@ -157,6 +181,9 @@ router.put('/albums/:albumId/reviews/me', async (req: AuthedRequest, res) => {
         albumTitle: data.albumTitle,
         albumArtist: data.albumArtist,
         albumArtworkUrl: data.albumArtworkUrl ?? null,
+        albumGenre: data.albumGenre ?? null,
+        albumYear: data.albumYear ?? null,
+        albumCountry: data.albumCountry ?? null,
         rating: data.rating,
         reviewText: data.reviewText ?? null,
         listenedAt,

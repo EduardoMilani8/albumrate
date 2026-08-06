@@ -20,6 +20,27 @@ const createLogSchema = z.object({
   albumTitle: z.string().trim().max(200).default(''),
   albumArtist: z.string().trim().max(200).default(''),
   albumArtworkUrl: z.string().url().max(500).nullable().optional(),
+  albumGenre: z
+    .string()
+    .trim()
+    .max(100, 'O gênero deve ter no máximo 100 caracteres.')
+    .nullable()
+    .optional()
+    .transform((value) => value || null),
+  albumYear: z
+    .number()
+    .int()
+    .min(1900, 'Ano do álbum inválido.')
+    .max(2100, 'Ano do álbum inválido.')
+    .nullable()
+    .optional(),
+  albumCountry: z
+    .string()
+    .trim()
+    .max(3, 'País do artista inválido.')
+    .nullable()
+    .optional()
+    .transform((value) => value || null),
   listenedAt: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'A data deve estar no formato AAAA-MM-DD.')
@@ -66,6 +87,9 @@ router.post('/me/listening-logs', async (req: AuthedRequest, res) => {
       albumTitle: data.albumTitle,
       albumArtist: data.albumArtist,
       albumArtworkUrl: data.albumArtworkUrl ?? null,
+      albumGenre: data.albumGenre ?? null,
+      albumYear: data.albumYear ?? null,
+      albumCountry: data.albumCountry ?? null,
       listenedAt: data.listenedAt ?? todayLocalISO(),
     })
     .returning()

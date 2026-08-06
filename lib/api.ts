@@ -3,6 +3,7 @@ import type {
   AlbumListsResponse,
   AlbumReviewsResponse,
   AuthUser,
+  DiversityScoreResponse,
   ListeningLog,
   ListeningLogsResponse,
   ListAlbum,
@@ -104,6 +105,9 @@ export const api = {
       albumTitle: string
       albumArtist: string
       albumArtworkUrl?: string | null
+      albumGenre?: string | null
+      albumYear?: number | null
+      albumCountry?: string | null
       mediaReview?: {
         mediaType: MediaType
         pressingQualityRating: number
@@ -131,6 +135,9 @@ export const api = {
     albumTitle: string
     albumArtist: string
     albumArtworkUrl?: string | null
+    albumGenre?: string | null
+    albumYear?: number | null
+    albumCountry?: string | null
   }) {
     return request<{ log: ListeningLog }>('/api/me/listening-logs', {
       method: 'POST',
@@ -201,5 +208,9 @@ export const api = {
       method: 'PUT',
       body: { albumIds },
     })
+  },
+
+  diversityScore(userId: string) {
+    return request<DiversityScoreResponse>(`/api/users/${userId}/diversity-score`)
   },
 }

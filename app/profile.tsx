@@ -4,10 +4,11 @@ import { router, useFocusEffect } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import StarRating from '../components/StarRating'
+import DiversityChart from '../components/DiversityChart'
 import { colors, radius, spacing } from '../constants/theme'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
-import type { Review } from '../lib/types'
+import type { DiversityScoreResponse, Review } from '../lib/types'
 
 function formatListenedAt(value: string): string {
   const [year, month, day] = value.split('-')
@@ -18,6 +19,7 @@ function formatListenedAt(value: string): string {
 export default function ProfileScreen() {
   const { user, signOut } = useAuth()
   const [reviews, setReviews] = useState<Review[]>([])
+  const [diversity, setDiversity] = useState<DiversityScoreResponse | null>(null)
   const [loading, setLoading] = useState(true)
 
   useFocusEffect(
@@ -31,10 +33,20 @@ export default function ProfileScreen() {
         .finally(() => {
           if (active) setLoading(false)
         })
+      if (user?.id) {
+        api
+          .diversityScore(user.id)
+          .then((data) => {
+            if (active) setDiversity(data)
+          })
+          .catch((err) => {
+            console.warn(err)
+          })
+      }
       return () => {
         active = false
       }
-    }, []),
+    }, [user?.id]),
   )
 
   const handleDelete = (review: Review) => {
@@ -96,24 +108,37 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <Pressable style={styles.diaryButton} onPress={() => router.push('/lists')}>
-        <Ionicons name="list-outline" size={18} color={colors.text} />
-        <Text style={styles.diaryButtonText}>Minhas listas</Text>
-        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-      </Pressable>
-
-      <Pressable style={styles.diaryButton} onPress={() => router.push('/diary')}>
-        <Ionicons name="book-outline" size={18} color={colors.text} />
-        <Text style={styles.diaryButtonText}>Meu diário</Text>
-        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-      </Pressable>
-
       {loading ? (
         <ActivityIndicator color={colors.accent} style={styles.loading} />
       ) : (
         <FlatList
           data={reviews}
           keyExtractor={(item) => item.id}
+          ListHeaderComponent={
+            <View style={styles.listHeader}>
+              {diversity ? (
+                <DiversityChart
+                  score={diversity.score}
+                  totalAlbums={diversity.totalAlbums}
+                  genreDistribution={diversity.genreDistribution}
+                  decadeDistribution={diversity.decadeDistribution}
+                  countryDistribution={diversity.countryDistribution}
+                />
+              ) : null}
+
+              <Pressable style={styles.diaryButton} onPress={() => router.push('/lists')}>
+                <Ionicons name="list-outline" size={18} color={colors.text} />
+                <Text style={styles.diaryButtonText}>Minhas listas</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              </Pressable>
+
+              <Pressable style={styles.diaryButton} onPress={() => router.push('/diary')}>
+                <Ionicons name="book-outline" size={18} color={colors.text} />
+                <Text style={styles.diaryButtonText}>Meu diário</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              </Pressable>
+            </View>
+          }
           renderItem={({ item }) => (
             <View style={styles.reviewCard}>
               <Pressable
@@ -259,6 +284,9 @@ const styles = StyleSheet.create({
   },
   list: {
     padding: spacing.md,
+    gap: spacing.sm,
+  },
+  listHeader: {
     gap: spacing.sm,
   },
   reviewCard: {

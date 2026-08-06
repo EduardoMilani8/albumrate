@@ -11,6 +11,7 @@ import StarRating from '../../components/StarRating'
 import { colors, radius, spacing } from '../../constants/theme'
 import { api } from '../../lib/api'
 import { deleteAlbum, getAlbumById, upsertAlbum } from '../../lib/db'
+import { enrichAlbumMetadata } from '../../lib/metadata'
 import type { AlbumReviewsResponse, LoggedAlbum, Review } from '../../lib/types'
 
 function formatListenedAt(value: string): string {
@@ -37,6 +38,15 @@ export default function AlbumDetailScreen() {
 
   const [album, setAlbum] = useState<LoggedAlbum | null>(null)
   const [reviewsData, setReviewsData] = useState<AlbumReviewsResponse | null>(null)
+  const [metadata, setMetadata] = useState<{
+    genre: string | null
+    year: number | null
+    country: string | null
+  }>(() => ({
+    genre: params.genre || null,
+    year: params.releaseDate ? Number(params.releaseDate.slice(0, 4)) || null : null,
+    country: null,
+  }))
   const [existing, setExisting] = useState(false)
   const [loading, setLoading] = useState(true)
   const [modalVisible, setModalVisible] = useState(false)
@@ -83,6 +93,30 @@ export default function AlbumDetailScreen() {
   }, [db, params.id])
 
   useEffect(() => {
+    if (!album) return
+    let active = true
+    const releaseYear = album.releaseDate
+      ? Number(album.releaseDate.slice(0, 4)) || null
+      : metadata.year
+    enrichAlbumMetadata({
+      title: album.title,
+      artist: album.artist,
+      releaseYear,
+    }).then((enriched) => {
+      if (!active) return
+      setMetadata((current) => ({
+        genre: current.genre ?? enriched.genre,
+        year: current.year ?? enriched.year,
+        country: current.country ?? enriched.country,
+      }))
+    })
+    return () => {
+      active = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [album?.id])
+
+  useEffect(() => {
     loadReviews()
   }, [loadReviews])
 
@@ -114,6 +148,9 @@ export default function AlbumDetailScreen() {
         albumTitle: album.title,
         albumArtist: album.artist,
         albumArtworkUrl: album.artworkUrl,
+        albumGenre: metadata.genre,
+        albumYear: metadata.year,
+        albumCountry: metadata.country,
       })
       setJustLogged(true)
       setTimeout(() => setJustLogged(false), 2000)
@@ -161,8 +198,12 @@ export default function AlbumDetailScreen() {
     )
   }
 
-  const year = album.releaseDate ? new Date(album.releaseDate).getFullYear().toString() : null
-  const meta = [year, album.genre].filter(Boolean).join(' • ')
+  const year = album.releaseDate
+    ? new Date(album.releaseDate).getFullYear().toString()
+    : metadata.year
+      ? String(metadata.year)
+      : null
+  const meta = [year, album.genre ?? metadata.genre].filter(Boolean).join(' • ')
   const myReview = reviewsData?.myReview ?? null
   const otherReviews = (reviewsData?.reviews ?? []).filter(
     (review) => review.id !== myReview?.id,
@@ -303,6 +344,9 @@ export default function AlbumDetailScreen() {
         albumTitle={album.title}
         albumArtist={album.artist}
         albumArtworkUrl={album.artworkUrl}
+        albumGenre={metadata.genre}
+        albumYear={metadata.year}
+        albumCountry={metadata.country}
         initialReview={myReview}
         onClose={() => setModalVisible(false)}
         onSaved={handleSaved}

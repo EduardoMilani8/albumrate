@@ -127,3 +127,28 @@ export interface AlbumListDetailResponse {
   list: AlbumListSummary
   albums: ListAlbum[]
 }
+
+export interface AlbumMetadataFields {
+  albumGenre?: string | null
+  albumYear?: number | null
+  albumCountry?: string | null
+}
+
+export interface DiversityBucket {
+  label: string
+  count: number
+  percentage: number
+}
+
+export interface DiversityScoreResponse {
+  userId: string
+  totalAlbums: number
+  score: number | null
+  entropy: number | null
+  maxEntropy: number | null
+  distinctGenres: number
+  albumsWithMetadata: { genre: number; year: number; country: number }
+  genreDistribution: DiversityBucket[]
+  decadeDistribution: DiversityBucket[]
+  countryDistribution: DiversityBucket[]
+}

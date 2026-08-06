@@ -38,6 +38,9 @@ interface ReviewModalProps {
   albumTitle: string
   albumArtist: string
   albumArtworkUrl: string | null
+  albumGenre?: string | null
+  albumYear?: number | null
+  albumCountry?: string | null
   initialReview: Review | null
   onClose: () => void
   onSaved: (review: Review) => void
@@ -64,6 +67,9 @@ export default function ReviewModal({
   albumTitle,
   albumArtist,
   albumArtworkUrl,
+  albumGenre,
+  albumYear,
+  albumCountry,
   initialReview,
   onClose,
   onSaved,
@@ -134,6 +140,9 @@ export default function ReviewModal({
         albumTitle,
         albumArtist,
         albumArtworkUrl,
+        albumGenre: albumGenre ?? null,
+        albumYear: albumYear ?? null,
+        albumCountry: albumCountry ?? null,
         mediaReview:
           hasMedia && mediaType && mediaQuality !== null && mediaCondition
             ? {

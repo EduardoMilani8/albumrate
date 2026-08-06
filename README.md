@@ -16,6 +16,7 @@ Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, em tema dark
 - **Listas temáticas de álbuns**: crie listas públicas ou privadas, adicione/remova/reordene álbuns (botões sobe/desce) e adicione um álbum a uma lista direto da sua página. A capa da lista é a do primeiro álbum
 - **Cadastro/login** com e-mail e senha (JWT, token salvo no `expo-secure-store`)
 - **Perfil** com suas avaliações (mais recentes primeiro), remoção e logout
+- **Índice de diversidade musical** no perfil: score 0–100 (entropia de Shannon normalizada sobre a distribuição de gêneros), gráfico donut de gêneros e distribuições por década e país do artista
 - Status local: **avaliado** (`logged`) ou **quero ouvir** (`want_to_listen`), com filtro "Quero ouvir" na home (só marca quem ainda não avaliou)
 - Estatísticas na home: total de álbuns avaliados e sua nota média
 
@@ -112,12 +113,14 @@ albumrate/
 │   ├── ReviewModal.tsx     # modal de avaliação (nota, resenha, data, mídia física)
 │   ├── MediaReviewCard.tsx # card de avaliação de mídia física (dentro da resenha)
 │   ├── ListFormModal.tsx   # modal criar/editar lista (nome, descrição, público/privado)
-│   └── AddToListModal.tsx  # modal "Adicionar a uma lista" na página do álbum
+│   ├── AddToListModal.tsx  # modal "Adicionar a uma lista" na página do álbum
+│   └── DiversityChart.tsx  # donut de diversidade (react-native-svg) + legenda
 ├── constants/theme.ts      # tema dark: colors, spacing, radius
 ├── lib/
 │   ├── api.ts              # cliente HTTP do backend
 │   ├── auth.tsx            # AuthContext + expo-secure-store
 │   ├── db.ts               # SQLite local (status da lista)
+│   ├── metadata.ts         # enriquecimento Deezer (gênero/ano/país, best-effort)
 │   ├── spotify.ts          # wrapper da API do Spotify
 │   └── types.ts            # tipos compartilhados
 └── server/                 # API: Express 5 + Postgres (Drizzle) — ver README
@@ -127,7 +130,8 @@ albumrate/
 
 - **Web:** o suporte web do `expo-sqlite` é **alpha**. No Chrome o OPFS pode falhar ao abrir o banco (bug conhecido, tela branca). O alvo de teste é o celular (Expo Go).
 - Reviews e notas **ficam no backend**. O SQLite local só guarda a lista "Meus Álbuns" com status.
-- O gênero vem sempre nulo na busca do Spotify (a API não expõe gênero no objeto de álbum).
+- O gênero vem sempre nulo na busca do Spotify (a API não expõe gênero no objeto de álbum). O app **enriquece** gênero/ano/país via **API pública do Deezer** (best-effort, sem chave) na tela do álbum e salva junto do review/log.
+- O **país do artista** (código ISO) vem do Deezer só quando disponível; o score de diversidade usa gênero + década, e o país entra no gráfico apenas se preenchido.
 - A busca do Spotify limita a **10 resultados** (`limit=10`); valores maiores retornam 400 `Invalid limit`.
 - `listenedAt` é validado no backend como data real e não futura.
 - `server/`: cadastro/login com **rate limit** (20 req/15 min/IP). Token JWT expira em 30 dias.

@@ -45,6 +45,7 @@ Tudo sob `/api`. Rotas de reviews exigem `Authorization: Bearer <token>`.
 | `DELETE` | `/albums/:albumId/reviews/me` | Remove a avaliação do usuário |
 | `GET` | `/albums/:albumId/reviews` | Nota média, total e lista de resenhas do álbum (+ `myReview`) |
 | `GET` | `/me/reviews` | Avaliações do usuário logado, mais recentes primeiro |
+| `GET` | `/users/:id/diversity-score` | Índice de diversidade musical (entropia de Shannon normalizada 0–100) + distribuições por gênero, década e país do artista |
 
 Payload do review:
 
@@ -55,17 +56,25 @@ Payload do review:
   "listenedAt": "2026-08-05",
   "albumTitle": "Thriller",
   "albumArtist": "Michael Jackson",
-  "albumArtworkUrl": "https://..."
+  "albumArtworkUrl": "https://...",
+  "albumGenre": "Pop",
+  "albumYear": 1982,
+  "albumCountry": "US"
 }
 ```
+
+O mesmo metadata (`albumGenre`/`albumYear`/`albumCountry`) é aceito no `POST /me/listening-logs`.
 
 Regras de validação (zod):
 
 - `rating` entre 0,5 e 5, múltiplo de 0,5.
 - `listenedAt` no formato `AAAA-MM-DD`, **data real** e **não futura**.
 - `reviewText` até 2000 caracteres; `albumTitle`/`albumArtist` até 200.
+- `albumGenre` até 100 caracteres; `albumYear` inteiro entre 1900 e 2100; `albumCountry` até 3 caracteres (código ISO do Deezer).
 - `albumId` na rota: no máximo 100 caracteres.
 - Senha: 6–72 caracteres (limite de 72 bytes do bcrypt).
+
+O `diversity-score` calcula a entropia de Shannon sobre a distribuição de gêneros dos álbuns distintos (união de `reviews` + `listening_logs`, metadata da review tem prioridade): `score = H/log2(n) × 100`. `score = 0` se todos os álbuns do mesmo gênero; `score = null` se nenhum álbum tem gênero.
 
 ## Scripts
 
