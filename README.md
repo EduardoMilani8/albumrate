@@ -63,6 +63,31 @@ Escaneie o QR code com o Expo Go (Android/iOS) ou pressione `w` para abrir no na
 
 Verifique tipos com `npx tsc --noEmit`.
 
+## Fluxo de desenvolvimento (app + backend)
+
+O app roda localmente no Expo Go; o backend roda em produção no Railway. As duas partes são atualizadas de forma diferente:
+
+**Mudanças só no app** (tela, componente, lógica do cliente):
+1. Rode `npx expo start` e escaneie o QR code no Expo Go.
+2. Veja as alterações em tempo real — **não precisa de deploy**.
+
+**Mudanças no `server/`** (rota, schema, migração):
+1. Teste local (se possível): `cd server && cp .env.example .env && npm run migrate && npm run dev`.
+2. Faça o commit e o push para o `master`:
+
+   ```sh
+   git add .
+   git commit -m "descrição em português"
+   git push
+   ```
+
+3. O Railway **redeploya automaticamente** a cada push e aplica as migrações no boot (`node dist/migrate.js`).
+4. Rode `npx expo start` e escaneie o QR no Expo Go para testar a mudança no app.
+
+> Espere o deploy terminar no painel do Railway antes de testar uma mudança de backend — enquanto isso, o servidor em produção ainda responde com o código antigo (e pode rejeitar campos novos).
+
+Verifique tipos antes de commitar: `npx tsc --noEmit` (app) e `cd server && npx tsc --noEmit` (server).
+
 ## Estrutura
 
 ```
@@ -78,7 +103,8 @@ albumrate/
 ├── components/
 │   ├── AlbumCard.tsx       # card de álbum nas listas
 │   ├── StarRating.tsx      # avaliação por estrelas com meio-ponto
-│   └── ReviewModal.tsx     # modal de avaliação (nota, resenha, data)
+│   ├── ReviewModal.tsx     # modal de avaliação (nota, resenha, data, mídia física)
+│   └── MediaReviewCard.tsx # card de avaliação de mídia física (dentro da resenha)
 ├── constants/theme.ts      # tema dark: colors, spacing, radius
 ├── lib/
 │   ├── api.ts              # cliente HTTP do backend
