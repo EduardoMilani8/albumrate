@@ -9,9 +9,34 @@ const router = Router()
 
 const RATING_MIN = 0.5
 const RATING_MAX = 5
+const ALBUM_ID_MAX_LENGTH = 100
 
 function albumIdOf(req: AuthedRequest): string {
   return String(req.params.albumId)
+}
+
+function hasValidAlbumId(req: AuthedRequest): boolean {
+  const albumId = albumIdOf(req)
+  return albumId.length > 0 && albumId.length <= ALBUM_ID_MAX_LENGTH
+}
+
+function isValidDate(value: string): boolean {
+  const [year, month, day] = value.split('-').map(Number)
+  if (!year || !month || !day) return false
+  const date = new Date(Date.UTC(year, month - 1, day))
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  )
+}
+
+function todayLocalISO(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 const ratingSchema = z
@@ -32,6 +57,8 @@ const reviewSchema = z.object({
   listenedAt: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'A data deve estar no formato AAAA-MM-DD.')
+    .refine(isValidDate, 'Data inválida.')
+    .refine((value) => value <= todayLocalISO(), 'A data não pode ser no futuro.')
     .optional(),
   albumTitle: z.string().trim().max(200).default(''),
   albumArtist: z.string().trim().max(200).default(''),
@@ -70,6 +97,10 @@ function toReviewJson(review: {
 }
 
 router.put('/albums/:albumId/reviews/me', async (req: AuthedRequest, res) => {
+  if (!hasValidAlbumId(req)) {
+    res.status(400).json({ error: 'Identificador do álbum inválido.' })
+    return
+  }
   const userId = req.userId!
   const albumId = albumIdOf(req)
 
@@ -118,6 +149,10 @@ router.put('/albums/:albumId/reviews/me', async (req: AuthedRequest, res) => {
 })
 
 router.delete('/albums/:albumId/reviews/me', async (req: AuthedRequest, res) => {
+  if (!hasValidAlbumId(req)) {
+    res.status(400).json({ error: 'Identificador do álbum inválido.' })
+    return
+  }
   const userId = req.userId!
 
   const deleted = await db
@@ -133,6 +168,10 @@ router.delete('/albums/:albumId/reviews/me', async (req: AuthedRequest, res) => 
 })
 
 router.get('/albums/:albumId/reviews', async (req: AuthedRequest, res) => {
+  if (!hasValidAlbumId(req)) {
+    res.status(400).json({ error: 'Identificador do álbum inválido.' })
+    return
+  }
   const albumId = albumIdOf(req)
 
   const rows = await db

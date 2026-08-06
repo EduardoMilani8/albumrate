@@ -9,14 +9,17 @@ import { users } from '../schema.js'
 const router = Router()
 
 const registerSchema = z.object({
-  email: z.string().trim().toLowerCase().email('E-mail inválido.'),
-  password: z.string().min(6, 'A senha precisa de pelo menos 6 caracteres.'),
+  email: z.string().trim().toLowerCase().email('E-mail inválido.').max(254, 'E-mail muito longo.'),
+  password: z
+    .string()
+    .min(6, 'A senha precisa de pelo menos 6 caracteres.')
+    .max(72, 'A senha deve ter no máximo 72 caracteres.'),
   name: z.string().trim().max(60).optional(),
 })
 
 const loginSchema = z.object({
-  email: z.string().trim().toLowerCase().email('E-mail inválido.'),
-  password: z.string().min(1, 'Informe a senha.'),
+  email: z.string().trim().toLowerCase().email('E-mail inválido.').max(254, 'E-mail muito longo.'),
+  password: z.string().min(1, 'Informe a senha.').max(72, 'A senha deve ter no máximo 72 caracteres.'),
 })
 
 function publicUser(user: { id: string; email: string; name: string | null }) {

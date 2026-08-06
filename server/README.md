@@ -19,7 +19,7 @@ npm run dev            # tsx watch → http://localhost:8080
 
 1. Crie uma conta em https://railway.app e um **New Project**.
 2. Adicione um **PostgreSQL** (Database → New → PostgreSQL). Copie a `DATABASE_URL` dele.
-3. Adicione um **Service** do tipo **Deploy from Dockerfile** apontando para esta pasta `server/` (ou repo raiz, se o Dockerfile estiver na raiz do serviço).
+3. Adicione um **Service** do tipo **Deploy from Dockerfile** apontando para esta pasta `server/` (no Railway: Settings → Source → Root Directory = `server`).
 4. Nas variáveis de ambiente do serviço, defina:
    - `DATABASE_URL=postgres://...` (do passo 2)
    - `JWT_SECRET=<senha longa e aleatória>`
@@ -27,6 +27,8 @@ npm run dev            # tsx watch → http://localhost:8080
 5. Deploy. O serviço roda `node dist/migrate.js && node dist/index.js` automaticamente (cria as tabelas e sobe na porta certa).
 6. A URL pública fica em `Settings → Networking → Public Networking` (ex.: `https://albumrate-server.up.railway.app`).
 
+> **Atenção:** o `server/.dockerignore` **não pode excluir `drizzle/`** — o `migrate.ts` lê essa pasta em runtime durante o boot do container.
+>
 > Também funciona no Render (Web Service com Dockerfile) ou em qualquer host que rode um contêiner. O Dockerfile compila e sobe o servidor.
 
 ## Endpoints
@@ -57,6 +59,14 @@ Payload do review:
 }
 ```
 
+Regras de validação (zod):
+
+- `rating` entre 0,5 e 5, múltiplo de 0,5.
+- `listenedAt` no formato `AAAA-MM-DD`, **data real** e **não futura**.
+- `reviewText` até 2000 caracteres; `albumTitle`/`albumArtist` até 200.
+- `albumId` na rota: no máximo 100 caracteres.
+- Senha: 6–72 caracteres (limite de 72 bytes do bcrypt).
+
 ## Scripts
 
 - `npm run dev` — servidor com watch (tsx)
@@ -71,3 +81,5 @@ Payload do review:
 - `.env` é local e **não** vai pro git (raiz do repo ignora `.env`).
 - Senhas com bcrypt (10 rounds). Token JWT expira em 30 dias.
 - O `JWT_SECRET` deve ser trocado no deploy.
+- **Rate limit** em `/api/auth` (cadastro/login): 20 requisições / 15 min / IP (`express-rate-limit`).
+- `app.set('trust proxy', 1)` — necessário para o rate limit pegar o IP real atrás de proxies (Railway/Render).

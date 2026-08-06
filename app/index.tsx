@@ -18,17 +18,23 @@ export default function IndexScreen() {
   useFocusEffect(
     useCallback(() => {
       let active = true
-      Promise.all([getAllAlbums(db), api.myReviews()])
-        .then(([rows, reviewData]) => {
-          if (!active) return
-          setAlbums(rows)
-          setReviews(reviewData.reviews)
+      getAllAlbums(db)
+        .then((rows) => {
+          if (active) setAlbums(rows)
         })
         .catch((err) => {
           console.warn(err)
         })
         .finally(() => {
           if (active) setLoading(false)
+        })
+      api
+        .myReviews()
+        .then((data) => {
+          if (active) setReviews(data.reviews)
+        })
+        .catch((err) => {
+          console.warn(err)
         })
       return () => {
         active = false

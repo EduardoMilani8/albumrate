@@ -35,6 +35,8 @@ Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, em tema dark
 
 Veja `server/README.md` — a API precisa estar no ar (Railway, Render ou local) e o app apontar para ela.
 
+> Backend atual em produção: `https://albumrate-production.up.railway.app` (health: `/api/health`).
+
 ### 2. App
 
 ```sh
@@ -46,7 +48,7 @@ Crie o arquivo `.env` na raiz (veja `.env.example`):
 ```sh
 EXPO_PUBLIC_SPOTIFY_CLIENT_ID=seu_client_id
 EXPO_PUBLIC_SPOTIFY_CLIENT_SECRET=seu_client_secret
-EXPO_PUBLIC_API_URL=https://seu-app.up.railway.app
+EXPO_PUBLIC_API_URL=https://albumrate-production.up.railway.app
 ```
 
 > **Atenção:** as credenciais do Spotify ficam embutidas no bundle (Client Credentials é feito para servidor-servidor). Aceitável para uso pessoal; para produção o ideal é um proxy.
@@ -92,6 +94,9 @@ albumrate/
 - **Web:** o suporte web do `expo-sqlite` é **alpha**. No Chrome o OPFS pode falhar ao abrir o banco (bug conhecido, tela branca). O alvo de teste é o celular (Expo Go).
 - Reviews e notas **ficam no backend**. O SQLite local só guarda a lista "Meus Álbuns" com status.
 - O gênero vem sempre nulo na busca do Spotify (a API não expõe gênero no objeto de álbum).
+- A busca do Spotify limita a **10 resultados** (`limit=10`); valores maiores retornam 400 `Invalid limit`.
+- `listenedAt` é validado no backend como data real e não futura.
+- `server/`: cadastro/login com **rate limit** (20 req/15 min/IP). Token JWT expira em 30 dias.
 
 ## Licença
 

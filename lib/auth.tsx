@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { api, setAuthToken } from './api'
+import { api, ApiError, setAuthToken } from './api'
 import type { AuthUser } from './types'
 
 const TOKEN_KEY = 'albumrate_auth_token'
@@ -28,9 +28,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const { user: me } = await api.me()
           if (active) setUser(me)
-        } catch {
-          await SecureStore.deleteItemAsync(TOKEN_KEY)
-          setAuthToken(null)
+        } catch (err) {
+          if (!active) return
+          if (err instanceof ApiError && err.status === 401) {
+            await SecureStore.deleteItemAsync(TOKEN_KEY)
+            setAuthToken(null)
+          } else {
+            setAuthToken(null)
+          }
         }
       })
       .finally(() => {

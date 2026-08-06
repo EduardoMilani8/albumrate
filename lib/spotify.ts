@@ -75,7 +75,7 @@ async function getAccessToken(): Promise<string> {
 export async function searchAlbums(query: string): Promise<SpotifyAlbumResult[]> {
   const token = await getAccessToken()
   const q = encodeURIComponent(query)
-  const response = await fetch(`${SEARCH_URL}?q=${q}&type=album&limit=20`, {
+  const response = await fetch(`${SEARCH_URL}?q=${q}&type=album&limit=10`, {
     headers: { Authorization: `Bearer ${token}` },
   })
 

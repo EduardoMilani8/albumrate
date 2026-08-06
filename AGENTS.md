@@ -5,6 +5,7 @@
 - **Albumrate** — Expo SDK 57 (React Native 0.86, React 19) + TypeScript (strict) + expo-router + expo-sqlite.
 - App de avaliação de álbuns: busca no Spotify, nota em estrelas (meio-ponto), resenha, data ouvida, perfil, persistência local em SQLite, tema dark.
 - **Avaliações e usuários vivem num backend** (`server/`): Node/Express + Postgres (Drizzle) + JWT + bcrypt. O app autentica com e-mail/senha e busca reviews via API.
+- **Backend em produção:** Railway (`albumrate-production.up.railway.app`) — ver "Deploy" abaixo.
 
 ## Commands
 
@@ -12,7 +13,6 @@
 - **Typecheck (server):** `cd server && npx tsc --noEmit`
 - **Run (app):** `npx expo start` (QR no terminal; `w` = web)
 - **Run (server):** `cd server && cp .env.example .env && npm run migrate && npm run dev`
-- **Deploy do server:** Railway — veja `server/README.md` (Dockerfile + Postgres + `JWT_SECRET`)
 - **Unit tests:** não há test runner configurado.
 
 ## Env vars
@@ -22,7 +22,7 @@ Necessárias para o app (`.env`, ver `.env.example`):
 ```
 EXPO_PUBLIC_SPOTIFY_CLIENT_ID=
 EXPO_PUBLIC_SPOTIFY_CLIENT_SECRET=
-EXPO_PUBLIC_API_URL=https://seu-app.up.railway.app
+EXPO_PUBLIC_API_URL=https://albumrate-production.up.railway.app
 ```
 
 Necessárias para o server (`server/.env`, ver `server/.env.example`):
@@ -40,7 +40,7 @@ JWT_SECRET=...
 - `components/` — `AlbumCard`, `StarRating`, `ReviewModal`
 - `constants/` — `theme.ts` (colors/spacing/radius dark; usar sempre)
 - `lib/` — `db.ts` (SQLite local, só status `logged`/`want_to_listen`), `spotify.ts` (API), `types.ts`, `api.ts` (cliente HTTP do backend), `auth.tsx` (AuthContext + SecureStore)
-- `server/` — API Node/Express + Postgres (Drizzle): `src/schema.ts`, `src/routes/{auth,reviews}.ts`, `src/migrate.ts`, `drizzle/` (migrações geradas)
+- `server/` — API Node/Express + Postgres (Drizzle): `src/schema.ts`, `src/routes/{auth,reviews}.ts`, `src/migrate.ts`, `drizzle/` (migrações geradas), `Dockerfile`, `.dockerignore`
 - `metro.config.js` — `.wasm` como asset + headers COEP/COOP (expo-sqlite web)
 
 ## Conventions
@@ -52,24 +52,36 @@ JWT_SECRET=...
 - Imports de caminho relativo (ex.: `../constants/theme`). O alias `@/*` existe no tsconfig.
 - Commits em português, estilo dos existentes.
 - `npx tsc --noEmit` deve passar ao final de qualquer mudança.
+- Todo endpoint de `server/` deve validar entrada com **zod** (schema) e devolver `{ error }` com status 4xx.
+- Mudanças no `server/` vão a produção automaticamente ao commitar (Railway redeploya) — teste local antes de commitar.
 
 ## Known issues / gotchas
 
 - **`btoa` não existe no RN** — `lib/spotify.ts` usa uma implementação própria de base64 (não troque por `btoa`).
+- **Busca do Spotify limita a 10 resultados** (`limit=10`): valores maiores (20/30/50) retornam 400 `Invalid limit` após mudança na API.
 - **Web + SQLite é alpha:** no Chrome o OPFS do `expo-sqlite` pode falhar ao abrir o banco (tela branca). O alvo de teste é mobile (Expo Go). Para mexer no web, confira `metro.config.js` (wasm + headers) e `app.json` → `web.output: "static"`.
 - `expo start` reescreve `tsconfig.json` automaticamente (gerencia o `include`) — não lute contra isso.
 - A API do Spotify **não devolve gênero** no objeto de álbum (`genre` fica `null`).
 - Expo SDK é versionado: ao mudar de SDK, leia os docs em https://docs.expo.dev/versions/v57.0.0/.
 - **Express 5** tipa `req.params.X` como `string | string[]` (não só `string`). Em `server/`, use `String(req.params.X)`.
 - `server/` usa `noUncheckedIndexedAccess` — desestruturar de `.returning()`/arrays pode dar `undefined`; trate antes de usar.
+- **`server/.dockerignore` NÃO pode excluir `drizzle/`**: o `migrate.ts` lê essa pasta em runtime (`node dist/migrate.js` no boot do container). Já houve bug disso antes.
+- **Rate limit** no `server`: `express-rate-limit` aplicado em `/api/auth` (20 req / 15 min / IP) e `app.set('trust proxy', 1)` para pegar o IP real atrás do Railway. Não remova.
+- **bcrypt limita a 72 bytes** — senhas com mais de 72 caracteres são rejeitadas no zod (max 72).
+- `listenedAt` no backend é validado como data real e **não futura** (senão o Postgres rejeita com 500).
+- `app/lib/auth.tsx`: token só é apagado em **401**; erro de rede mantém o token (para o usuário não ser deslogado à toa).
+- `app/lib/api.ts`: fetch com timeout de 20s via `AbortController`.
+
+## Deploy (Railway)
+
+- Serviço `albumrate-production` → Root Directory `server`, Dockerfile na raiz do serviço.
+- Variáveis no serviço: `DATABASE_URL` (Postgres do mesmo projeto) e `JWT_SECRET`. `PORT` é injetado pelo Railway (fallback 8080).
+- Deploy automático a cada push no `master`. Boot roda `node dist/migrate.js && node dist/index.js` (aplica migrações e sobe).
+- **Plano free do Railway:** trial de 30 dias (US$ 5); depois vira plano Free (US$ 1/mês de crédito). Server + Postgres 24/7 passa de US$ 1 → deploy pausa (não apaga) até o reset mensal. Opções quando vencer: Hobby (US$ 5/mês) ou migrar Postgres para Supabase/Neon (free) e server para Render free.
 
 ## Roadmap / decisões
 
-- **Fase atual:** testar no celular via **Expo Go** (`npx expo start` + QR code). Sem build standalone por enquanto.
-- **Quando o app parecer finalizado/legal:** gerar **APK standalone via EAS Build** (`eas build -p android --profile preview`, requer conta Expo). ✅ Anotado para não esquecer.
-- **⏳ PRÓXIMO PASSO (pendente, quem continuar deve fazer):** fazer o **deploy do backend na nuvem** e apontar o app para ele. Detalhes:
-  1. Railway (ou Render): criar projeto → Postgres → serviço a partir do `server/Dockerfile`.
-  2. Variáveis do serviço: `DATABASE_URL` (do Postgres criado) e `JWT_SECRET` (senha longa/aleatória). O servidor roda as migrações sozinho no boot.
-  3. Trocar `EXPO_PUBLIC_API_URL` no `.env` (hoje está `https://seu-app.up.railway.app`, placeholder) pela URL pública real do serviço.
-  4. Depois testar no Expo Go: cadastrar, avaliar, ver média, perfil.
-  - Referência completa: `server/README.md`.
+- **Fase atual:** evoluir o app testando no **Expo Go** (`npx expo start` + QR code). Backend já em produção no Railway.
+- **Quando o app parecer finalizado/legal:** gerar **APK standalone via EAS Build** (`eas build -p android --profile preview`, requer conta Expo). O APK aponta pro mesmo `EXPO_PUBLIC_API_URL`. Compartilhar com amigos = instalar o APK (permitir fontes desconhecidas); iOS precisaria de TestFlight/App Store (US$ 99/ano).
+- **Quando o trial do Railway vencer:** decidir entre Hobby (pagar, zero manutenção) ou híbrido grátis (Postgres Supabase/Neon + server no Render free — dorme após 15 min ocioso). O deploy pausa, não é apagado.
+- Ideias futuras possíveis (não decididas): validação de e-mail, página pública de perfil, listas/desafios, "quero ouvir" sincronizado no backend.

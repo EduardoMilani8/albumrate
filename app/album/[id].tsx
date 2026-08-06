@@ -84,13 +84,16 @@ export default function AlbumDetailScreen() {
 
   const handleSaved = async (review: Review) => {
     if (album) {
-      await upsertAlbum(db, {
+      const updated: LoggedAlbum = {
         ...album,
         rating: null,
         review: null,
         loggedAt: new Date().toISOString(),
         status: 'logged',
-      })
+      }
+      await upsertAlbum(db, updated)
+      setAlbum(updated)
+      setExisting(true)
     }
     await loadReviews()
   }
@@ -101,13 +104,16 @@ export default function AlbumDetailScreen() {
 
   const saveWantToListen = async () => {
     if (!album) return
-    await upsertAlbum(db, {
+    const updated: LoggedAlbum = {
       ...album,
       rating: null,
       review: null,
       loggedAt: new Date().toISOString(),
       status: 'want_to_listen',
-    })
+    }
+    await upsertAlbum(db, updated)
+    setAlbum(updated)
+    setExisting(true)
   }
 
   const removeAlbum = () => {

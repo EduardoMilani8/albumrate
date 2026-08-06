@@ -1,6 +1,7 @@
 import type { AlbumReviewsResponse, AuthUser, MyReviewsResponse, Review } from './types'
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080'
+const REQUEST_TIMEOUT_MS = 20000
 
 let authToken: string | null = null
 
@@ -23,14 +24,28 @@ interface RequestOptions {
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
-    method: options.method ?? 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-    },
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-  })
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
+  let response: Response
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      method: options.method ?? 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      },
+      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      signal: controller.signal,
+    })
+  } catch (err) {
+    if (controller.signal.aborted) {
+      throw new ApiError(0, 'O servidor demorou para responder. Tente novamente.')
+    }
+    throw new ApiError(0, 'Sem conexão com o servidor. Verifique sua internet.')
+  } finally {
+    clearTimeout(timeout)
+  }
 
   if (response.status === 204) return undefined as T
 
