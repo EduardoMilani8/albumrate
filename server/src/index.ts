@@ -4,6 +4,7 @@ import express from 'express'
 import rateLimit from 'express-rate-limit'
 import helmet from 'helmet'
 import { authenticate } from './lib/auth.js'
+import albumOfMonthRouter from './routes/albumOfMonth.js'
 import authRouter from './routes/auth.js'
 import countriesRouter from './routes/countries.js'
 import dailyPickRouter from './routes/dailyPick.js'
@@ -90,6 +91,7 @@ app.use('/api', listeningLogsRouter)
 app.use('/api', listsRouter)
 app.use('/api', diversityRouter)
 app.use('/api', dailyPickRouter)
+app.use('/api', albumOfMonthRouter)
 app.use('/api', countriesRouter)
 app.use('/api', socialRouter)
 app.use('/api/me/spotify', spotifyImportLimiter)

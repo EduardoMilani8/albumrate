@@ -73,6 +73,11 @@ function RootNavigator() {
           <Stack.Screen name="diary" options={{ title: 'Meu Diário' }} />
           <Stack.Screen name="lists" options={{ title: 'Minhas Listas' }} />
           <Stack.Screen name="list/[id]" options={{ title: '' }} />
+          <Stack.Screen name="album-of-month" options={{ title: 'Álbum do Mês' }} />
+          <Stack.Screen
+            name="album-of-month-history"
+            options={{ title: 'Histórico do Álbum do Mês' }}
+          />
           <Stack.Screen name="profile" options={{ title: 'Perfil' }} />
           <Stack.Screen name="user/[id]" options={{ title: '' }} />
           <Stack.Screen name="spotify-onboarding" options={{ headerShown: false }} />

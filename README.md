@@ -22,6 +22,7 @@ Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, em tema dark
 - **Mapa-múndi de origens** no perfil: mostra de quais países vêm os artistas que você ouviu (intensidade de cor = nº de álbuns, toque/hover para detalhes). Países faltantes são resolvidos em background via **MusicBrainz** (cache no backend)
 - Status local: **avaliado** (`logged`) ou **quero ouvir** (`want_to_listen`), com filtro "Quero ouvir" na home (só marca quem ainda não avaliou)
 - **Álbum aleatório do dia**: botão em destaque na home; um sorteio por dia por usuário (prioriza gêneros de menor frequência no seu histórico para puxar diversidade, com fallback para aleatório puro). Depois de sorteado, o botão é substituído pelo card do álbum + "volte amanhã"
+- **Álbum do mês**: todo mês um álbum em destaque, definido manualmente pelo admin (usuários com e-mail em `ADMIN_EMAILS` são promovidos automaticamente). Tela dedicada com o álbum atual, botão "Ver álbum" (avaliação normal) e **discussão em comentários** separada das reviews, além de **histórico navegável** dos meses anteriores
 - Estatísticas na home: total de álbuns avaliados e sua nota média
 - **Social**: seguir/deixar de seguir usuários (botão no perfil público), contadores de seguidores/seguindo, busca de pessoas na tela de busca e **feed de atividade na home** com o que quem você segue está fazendo (reviews novas, álbuns marcados no diário e listas criadas). Cada item leva à tela correspondente; listas privadas nunca aparecem no feed
 
@@ -111,6 +112,8 @@ albumrate/
 │   ├── diary.tsx           # Meu Diário: timeline de escutas agrupada por mês
 │   ├── lists.tsx           # Minhas listas: criar/abrir listas temáticas
 │   ├── list/[id].tsx       # detalhe da lista: adicionar, remover, reordenar álbuns (somente leitura se não for sua)
+│   ├── album-of-month.tsx  # álbum do mês: destaque atual, discussão em comentários, definir (admin)
+│   ├── album-of-month-history.tsx # histórico de álbuns dos meses anteriores (navegável)
 │   ├── login.tsx           # entrada na conta (e-mail/senha ou botão Spotify)
 │   ├── register.tsx        # cadastro (e-mail/senha ou botão Spotify)
 │   ├── spotify-onboarding.tsx # wizard de importação após conectar o Spotify
@@ -126,7 +129,8 @@ albumrate/
 │   ├── AddToListModal.tsx  # modal "Adicionar a uma lista" na página do álbum
 │   ├── FeedItem.tsx        # item do feed de atividade (review, escuta ou lista)
 │   ├── DiversityChart.tsx  # donut de diversidade (react-native-svg) + legenda
-│   └── WorldMap.tsx        # mapa-múndi de origens dos artistas (react-native-svg)
+│   ├── WorldMap.tsx        # mapa-múndi de origens dos artistas (react-native-svg)
+│   └── AlbumOfMonthAdminModal.tsx # modal admin: busca Spotify + mês/ano p/ definir o álbum do mês
 ├── constants/theme.ts      # tema dark: colors, spacing, radius
 ├── lib/
 │   ├── api.ts              # cliente HTTP do backend
@@ -154,6 +158,7 @@ albumrate/
 - **Segurança da busca:** o Client Secret do Spotify fica só no servidor; o app busca via `GET /api/spotify/search` (autenticado, com rate limit). Reviews públicas (`GET /api/albums/:albumId/reviews`) expõem só o `name` do autor, nunca o e-mail. O Spotify não oferece revogação de token por API — ao desconectar, apagamos nosso copy e o app continua listado em "Aplicações aprovadas" do usuário.
 - **Gêneros favoritos:** salvos via `PUT /api/me/favorite-genres` durante o onboarding (até 5, detectados dos top artistas) e exibidos no perfil.
 - **Social:** tabela `follows` (unique `follower_id + following_id`, cascade). Perfil público `GET /api/users/:id` (sem e-mail), seguir/deixar de seguir via `PUT/DELETE /api/users/:id/follow`, busca de pessoas `GET /api/users/search?q=` e feed `GET /api/feed` (reviews + escutas + listas **públicas** de quem você segue, paginado por cursor `before`/`beforeId`). As resenhas públicas (`GET /api/albums/:albumId/reviews`) agora expõem `user.id` para navegar ao perfil; listas públicas retornam `isOwner`.
+- **Álbum do mês:** tabela `album_of_month` (unique `month + year`, metadados denormalizados) e `album_of_month_comments` (FK cascade). `POST /api/album-of-month` é restrito a admin (`users.is_admin`, 403 para não-admin); salvar de novo no mesmo mês substitui. Comentários podem ser postados por qualquer usuário logado e expõem só `user.id/name/avatarUrl`. Admin é definido pela coluna `users.is_admin`; e-mails listados em `ADMIN_EMAILS` (env var do servidor) são **promovidos automaticamente** no login/cadastro/abertura do app — não precisa de SQL manual.
 
 ## Licença
 

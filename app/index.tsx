@@ -9,7 +9,13 @@ import FeedItem from '../components/FeedItem'
 import { colors, radius, spacing } from '../constants/theme'
 import { api } from '../lib/api'
 import { getAllAlbums } from '../lib/db'
-import type { DailyPick, FeedItem as FeedItemType, LoggedAlbum, Review } from '../lib/types'
+import type {
+  AlbumOfMonth,
+  DailyPick,
+  FeedItem as FeedItemType,
+  LoggedAlbum,
+  Review,
+} from '../lib/types'
 
 type HomeTab = 'albums' | 'feed'
 
@@ -22,6 +28,8 @@ export default function IndexScreen() {
   const [dailyPick, setDailyPick] = useState<DailyPick | null>(null)
   const [dailyPickLoading, setDailyPickLoading] = useState(true)
   const [dailyPicking, setDailyPicking] = useState(false)
+  const [albumOfMonth, setAlbumOfMonth] = useState<AlbumOfMonth | null>(null)
+  const [albumOfMonthLoading, setAlbumOfMonthLoading] = useState(true)
   const [tab, setTab] = useState<HomeTab>('albums')
   const [feedItems, setFeedItems] = useState<FeedItemType[]>([])
   const [feedLoading, setFeedLoading] = useState(true)
@@ -61,6 +69,17 @@ export default function IndexScreen() {
         })
         .finally(() => {
           if (active) setDailyPickLoading(false)
+        })
+      api
+        .albumOfMonth()
+        .then((data) => {
+          if (active) setAlbumOfMonth(data.pick)
+        })
+        .catch((err) => {
+          console.warn(err)
+        })
+        .finally(() => {
+          if (active) setAlbumOfMonthLoading(false)
         })
       api
         .getFeed()
@@ -192,6 +211,28 @@ export default function IndexScreen() {
         onOpenAlbum={openDailyPickAlbum}
       />
 
+      <Pressable
+        style={styles.albumOfMonthCard}
+        onPress={() => router.push('/album-of-month')}
+      >
+        <View style={styles.albumOfMonthIcon}>
+          <Ionicons name="calendar" size={20} color={colors.accent} />
+        </View>
+        <View style={styles.albumOfMonthInfo}>
+          <Text style={styles.albumOfMonthTitle}>Álbum do mês</Text>
+          {albumOfMonthLoading ? null : albumOfMonth ? (
+            <Text style={styles.albumOfMonthSubtitle} numberOfLines={1}>
+              {albumOfMonth.albumTitle} — {albumOfMonth.albumArtist}
+            </Text>
+          ) : (
+            <Text style={styles.albumOfMonthSubtitle} numberOfLines={1}>
+              Nenhum álbum definido para este mês ainda.
+            </Text>
+          )}
+        </View>
+        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+      </Pressable>
+
       <View style={styles.segmented}>
         {(['albums', 'feed'] as const).map((key) => {
           const active = tab === key
@@ -303,6 +344,39 @@ const styles = StyleSheet.create({
     width: 1,
     alignSelf: 'stretch',
     backgroundColor: colors.border,
+  },
+  albumOfMonthCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  albumOfMonthIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.sm,
+    backgroundColor: colors.accentMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  albumOfMonthInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  albumOfMonthTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  albumOfMonthSubtitle: {
+    color: colors.textMuted,
+    fontSize: 13,
   },
   segmented: {
     flexDirection: 'row',

@@ -3,6 +3,7 @@ import { eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db.js'
 import { authenticate, signToken, type AuthedRequest } from '../lib/auth.js'
+import { ensureAdmin, isAdminEmail } from '../lib/admin.js'
 import { hashPassword, verifyPassword } from '../lib/password.js'
 import { toPublicUser } from '../lib/user.js'
 import { users } from '../schema.js'
@@ -45,12 +46,14 @@ router.post('/register', async (req, res) => {
       email: parsed.data.email,
       name: parsed.data.name ?? null,
       passwordHash,
+      isAdmin: isAdminEmail(parsed.data.email),
     })
     .returning({
       id: users.id,
       email: users.email,
       name: users.name,
       favoriteGenres: users.favoriteGenres,
+      isAdmin: users.isAdmin,
     })
 
   const user = created[0]
@@ -79,6 +82,7 @@ router.post('/login', async (req, res) => {
     res.status(401).json({ error: 'E-mail ou senha incorretos.' })
     return
   }
+  await ensureAdmin(user)
 
   res.json({
     token: signToken(user.id),
@@ -97,12 +101,14 @@ router.get('/me', authenticate, async (req: AuthedRequest, res) => {
       country: true,
       spotifyId: true,
       favoriteGenres: true,
+      isAdmin: true,
     },
   })
   if (!user) {
     res.status(404).json({ error: 'Usuário não encontrado.' })
     return
   }
+  await ensureAdmin(user)
   res.json({ user: toPublicUser(user) })
 })
 

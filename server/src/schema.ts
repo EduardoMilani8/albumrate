@@ -25,6 +25,7 @@ export const users = pgTable('users', {
   spotifyTokenExpiresAt: timestamp('spotify_token_expires_at', { withTimezone: true }),
   spotifyConnectedAt: timestamp('spotify_connected_at', { withTimezone: true }),
   favoriteGenres: text('favorite_genres').array(),
+  isAdmin: boolean('is_admin').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })
@@ -178,6 +179,38 @@ export const listAlbums = pgTable(
   ],
 )
 
+export const albumOfMonth = pgTable(
+  'album_of_month',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    albumId: text('album_id').notNull(),
+    albumTitle: text('album_title').notNull(),
+    albumArtist: text('album_artist').notNull(),
+    albumArtworkUrl: text('album_artwork_url'),
+    month: integer('month').notNull(),
+    year: integer('year').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex('album_of_month_month_year_unique').on(table.month, table.year)],
+)
+
+export const albumOfMonthComments = pgTable(
+  'album_of_month_comments',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    albumOfMonthId: uuid('album_of_month_id')
+      .notNull()
+      .references(() => albumOfMonth.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    commentText: text('comment_text').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index('album_of_month_comments_aom_idx').on(table.albumOfMonthId)],
+)
+
 export const listsRelations = relations(lists, ({ many }) => ({
   albums: many(listAlbums),
 }))
@@ -213,3 +246,7 @@ export type Artist = typeof artists.$inferSelect
 export type NewArtist = typeof artists.$inferInsert
 export type Follow = typeof follows.$inferSelect
 export type NewFollow = typeof follows.$inferInsert
+export type AlbumOfMonth = typeof albumOfMonth.$inferSelect
+export type NewAlbumOfMonth = typeof albumOfMonth.$inferInsert
+export type AlbumOfMonthComment = typeof albumOfMonthComments.$inferSelect
+export type NewAlbumOfMonthComment = typeof albumOfMonthComments.$inferInsert

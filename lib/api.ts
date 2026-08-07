@@ -1,6 +1,10 @@
 import type {
   AlbumListDetailResponse,
   AlbumListsResponse,
+  AlbumOfMonth,
+  AlbumOfMonthCommentsResponse,
+  AlbumOfMonthHistoryResponse,
+  AlbumOfMonthResponse,
   AlbumReviewsResponse,
   AuthUser,
   CountryBackfillResponse,
@@ -345,5 +349,42 @@ export const api = {
 
   getPublicList(id: string) {
     return request<AlbumListDetailResponse>(`/api/lists/${id}`)
+  },
+
+  albumOfMonth() {
+    return request<AlbumOfMonthResponse>('/api/album-of-month')
+  },
+
+  albumOfMonthById(id: string) {
+    return request<AlbumOfMonthResponse>(`/api/album-of-month/${id}`)
+  },
+
+  albumOfMonthHistory() {
+    return request<AlbumOfMonthHistoryResponse>('/api/album-of-month/history')
+  },
+
+  setAlbumOfMonth(payload: {
+    albumId: string
+    albumTitle: string
+    albumArtist: string
+    albumArtworkUrl?: string | null
+    month: number
+    year: number
+  }) {
+    return request<{ pick: AlbumOfMonth }>('/api/album-of-month', {
+      method: 'POST',
+      body: payload,
+    })
+  },
+
+  albumOfMonthComments(id: string) {
+    return request<AlbumOfMonthCommentsResponse>(`/api/album-of-month/${id}/comments`)
+  },
+
+  postAlbumOfMonthComment(id: string, commentText: string) {
+    return request<{ comment: AlbumOfMonthCommentsResponse['comments'][number] }>(
+      `/api/album-of-month/${id}/comments`,
+      { method: 'POST', body: { commentText } },
+    )
   },
 }

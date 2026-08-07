@@ -4,6 +4,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { db } from '../db.js'
 import { signToken } from '../lib/auth.js'
+import { ensureAdmin, isAdminEmail } from '../lib/admin.js'
 import {
   encryptSecret,
   exchangeSpotifyCode,
@@ -121,6 +122,7 @@ router.post('/exchange', async (req, res) => {
       res.status(500).json({ error: 'Não foi possível atualizar a conexão com o Spotify.' })
       return
     }
+    await ensureAdmin(user)
     res.json({ token: signToken(user.id), user: toPublicUser(user) })
     return
   }
@@ -204,6 +206,7 @@ router.post('/link', async (req, res) => {
       res.status(500).json({ error: 'Não foi possível vincular a conta do Spotify.' })
       return
     }
+    await ensureAdmin(user)
     res.json({ token: signToken(user.id), user: toPublicUser(user) })
     return
   }
@@ -225,10 +228,11 @@ async function createSpotifyUser(
   expiresIn: number,
   options?: { forceNullEmail?: boolean },
 ): Promise<User> {
+  const email = options?.forceNullEmail ? null : profile.email?.toLowerCase().trim() ?? null
   const created = await db
     .insert(users)
     .values({
-      email: options?.forceNullEmail ? null : profile.email?.toLowerCase().trim() ?? null,
+      email,
       name: profile.displayName,
       passwordHash: null,
       avatarUrl: profile.imageUrl,
@@ -238,6 +242,7 @@ async function createSpotifyUser(
       ...(refreshToken ? { spotifyRefreshToken: encryptSecret(refreshToken) } : {}),
       spotifyTokenExpiresAt: new Date(Date.now() + expiresIn * 1000),
       spotifyConnectedAt: new Date(),
+      isAdmin: isAdminEmail(email),
     })
     .returning()
 

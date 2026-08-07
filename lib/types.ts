@@ -35,6 +35,7 @@ export interface AuthUser {
   country: string | null
   spotifyConnected: boolean
   favoriteGenres: string[]
+  isAdmin: boolean
 }
 
 export type MediaType = 'vinil' | 'cd' | 'cassete' | 'digital'
@@ -272,4 +273,36 @@ export interface FeedResponse {
   nextBefore: string | null
   nextBeforeId: string | null
   followingCount: number
+}
+
+export interface AlbumOfMonth {
+  id: string
+  albumId: string
+  albumTitle: string
+  albumArtist: string
+  albumArtworkUrl: string | null
+  month: number
+  year: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AlbumOfMonthResponse {
+  pick: AlbumOfMonth | null
+}
+
+export interface AlbumOfMonthHistoryResponse {
+  items: AlbumOfMonth[]
+}
+
+export interface AlbumOfMonthComment {
+  id: string
+  albumOfMonthId: string
+  commentText: string
+  createdAt: string
+  user: { id: string; name: string | null; avatarUrl: string | null }
+}
+
+export interface AlbumOfMonthCommentsResponse {
+  comments: AlbumOfMonthComment[]
 }
