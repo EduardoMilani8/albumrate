@@ -2,12 +2,13 @@ import { Ionicons } from '@expo/vector-icons'
 import { router, useFocusEffect } from 'expo-router'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useCallback, useState } from 'react'
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import AlbumCard from '../components/AlbumCard'
+import DailyPickCard from '../components/DailyPickCard'
 import { colors, radius, spacing } from '../constants/theme'
 import { api } from '../lib/api'
 import { getAllAlbums } from '../lib/db'
-import type { LoggedAlbum, Review } from '../lib/types'
+import type { DailyPick, LoggedAlbum, Review } from '../lib/types'
 
 export default function IndexScreen() {
   const db = useSQLiteContext()
@@ -15,6 +16,9 @@ export default function IndexScreen() {
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'want_to_listen'>('all')
+  const [dailyPick, setDailyPick] = useState<DailyPick | null>(null)
+  const [dailyPickLoading, setDailyPickLoading] = useState(true)
+  const [dailyPicking, setDailyPicking] = useState(false)
 
   useFocusEffect(
     useCallback(() => {
@@ -37,6 +41,17 @@ export default function IndexScreen() {
         .catch((err) => {
           console.warn(err)
         })
+      api
+        .dailyPickToday()
+        .then((data) => {
+          if (active) setDailyPick(data.pick)
+        })
+        .catch((err) => {
+          console.warn(err)
+        })
+        .finally(() => {
+          if (active) setDailyPickLoading(false)
+        })
       return () => {
         active = false
       }
@@ -53,6 +68,32 @@ export default function IndexScreen() {
       ? null
       : reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
 
+  const handleDailyPick = async () => {
+    if (dailyPicking) return
+    setDailyPicking(true)
+    try {
+      const data = await api.dailyPick()
+      setDailyPick(data.pick)
+    } catch (err) {
+      Alert.alert('Erro', err instanceof Error ? err.message : 'Não foi possível sortear um álbum.')
+    } finally {
+      setDailyPicking(false)
+    }
+  }
+
+  const openDailyPickAlbum = (pick: DailyPick) => {
+    router.push({
+      pathname: '/album/[id]',
+      params: {
+        id: pick.albumId,
+        title: pick.albumTitle,
+        artist: pick.albumArtist,
+        artworkUrl: pick.albumArtworkUrl ?? '',
+        fromSearch: '1',
+      },
+    })
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.stats}>
@@ -66,6 +107,14 @@ export default function IndexScreen() {
           <Text style={styles.statLabel}>Nota média</Text>
         </View>
       </View>
+
+      <DailyPickCard
+        pick={dailyPick}
+        loading={dailyPickLoading}
+        picking={dailyPicking}
+        onPick={handleDailyPick}
+        onOpenAlbum={openDailyPickAlbum}
+      />
 
       <View style={styles.segmented}>
         {(['all', 'want_to_listen'] as const).map((key) => {

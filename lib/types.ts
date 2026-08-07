@@ -162,6 +162,21 @@ export interface CountryBackfillResponse {
   total: number
 }
 
+export interface DailyPick {
+  id: string
+  albumId: string
+  albumTitle: string
+  albumArtist: string
+  albumArtworkUrl: string | null
+  date: string
+  createdAt: string
+}
+
+export interface DailyPickResponse {
+  pick: DailyPick | null
+  alreadyUsed?: boolean
+}
+
 export interface SpotifyRecentAlbum {
   albumId: string
   title: string

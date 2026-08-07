@@ -21,6 +21,7 @@ Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, em tema dark
 - **Índice de diversidade musical** no perfil: score 0–100 (entropia de Shannon normalizada sobre a distribuição de gêneros), gráfico donut de gêneros e distribuições por década e país do artista
 - **Mapa-múndi de origens** no perfil: mostra de quais países vêm os artistas que você ouviu (intensidade de cor = nº de álbuns, toque/hover para detalhes). Países faltantes são resolvidos em background via **MusicBrainz** (cache no backend)
 - Status local: **avaliado** (`logged`) ou **quero ouvir** (`want_to_listen`), com filtro "Quero ouvir" na home (só marca quem ainda não avaliou)
+- **Álbum aleatório do dia**: botão em destaque na home; um sorteio por dia por usuário (prioriza gêneros de menor frequência no seu histórico para puxar diversidade, com fallback para aleatório puro). Depois de sorteado, o botão é substituído pelo card do álbum + "volte amanhã"
 - Estatísticas na home: total de álbuns avaliados e sua nota média
 
 ## Stack
@@ -103,7 +104,7 @@ Verifique tipos antes de commitar: `npx tsc --noEmit` (app) e `cd server && npx 
 albumrate/
 ├── app/                    # rotas (expo-router)
 │   ├── _layout.tsx         # providers + Stack com rotas protegidas (login)
-│   ├── index.tsx           # home: estatísticas, lista, filtro Quero ouvir, FAB
+│   ├── index.tsx           # home: estatísticas, álbum do dia, lista, filtro Quero ouvir, FAB
 │   ├── search.tsx          # busca no Spotify
 │   ├── album/[id].tsx      # detalhe: média, resenhas, avaliar, quero ouvir, ouvir hoje, adicionar a lista
 │   ├── diary.tsx           # Meu Diário: timeline de escutas agrupada por mês
@@ -115,6 +116,7 @@ albumrate/
 │   └── profile.tsx         # perfil: avaliações, avatar, gêneros favoritos, conexão Spotify, logout
 ├── components/
 │   ├── AlbumCard.tsx       # card de álbum nas listas
+│   ├── DailyPickCard.tsx   # card "Álbum aleatório do dia" na home (sortear / já sorteado)
 │   ├── StarRating.tsx      # avaliação por estrelas com meio-ponto
 │   ├── ReviewModal.tsx     # modal de avaliação (nota, resenha, data, mídia física)
 │   ├── MediaReviewCard.tsx # card de avaliação de mídia física (dentro da resenha)

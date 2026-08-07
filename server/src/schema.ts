@@ -119,6 +119,26 @@ export const artists = pgTable('artists', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
+export const dailyPicks = pgTable(
+  'daily_picks',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    albumId: text('album_id').notNull(),
+    albumTitle: text('album_title').notNull(),
+    albumArtist: text('album_artist').notNull(),
+    albumArtworkUrl: text('album_artwork_url'),
+    date: date('date', { mode: 'string' }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('daily_picks_user_date_unique').on(table.userId, table.date),
+    index('daily_picks_user_idx').on(table.userId),
+  ],
+)
+
 export const listAlbums = pgTable(
   'list_albums',
   {
@@ -168,5 +188,7 @@ export type AlbumList = typeof lists.$inferSelect
 export type NewAlbumList = typeof lists.$inferInsert
 export type ListAlbum = typeof listAlbums.$inferSelect
 export type NewListAlbum = typeof listAlbums.$inferInsert
+export type DailyPick = typeof dailyPicks.$inferSelect
+export type NewDailyPick = typeof dailyPicks.$inferInsert
 export type Artist = typeof artists.$inferSelect
 export type NewArtist = typeof artists.$inferInsert

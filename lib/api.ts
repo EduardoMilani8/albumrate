@@ -4,6 +4,7 @@ import type {
   AlbumReviewsResponse,
   AuthUser,
   CountryBackfillResponse,
+  DailyPickResponse,
   DiversityScoreResponse,
   ListeningLog,
   ListeningLogsResponse,
@@ -283,6 +284,14 @@ export const api = {
       method: 'POST',
       body: {},
     })
+  },
+
+  dailyPickToday() {
+    return request<DailyPickResponse>('/api/daily-pick/today')
+  },
+
+  dailyPick() {
+    return request<DailyPickResponse>('/api/daily-pick')
   },
 
   searchSpotifyAlbums(query: string) {
