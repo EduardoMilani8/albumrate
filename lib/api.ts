@@ -3,6 +3,7 @@ import type {
   AlbumListsResponse,
   AlbumReviewsResponse,
   AuthUser,
+  CountryBackfillResponse,
   DiversityScoreResponse,
   ListeningLog,
   ListeningLogsResponse,
@@ -275,6 +276,13 @@ export const api = {
 
   diversityScore(userId: string) {
     return request<DiversityScoreResponse>(`/api/users/${userId}/diversity-score`)
+  },
+
+  backfillCountries() {
+    return request<CountryBackfillResponse>('/api/me/countries/backfill', {
+      method: 'POST',
+      body: {},
+    })
   },
 
   searchSpotifyAlbums(query: string) {

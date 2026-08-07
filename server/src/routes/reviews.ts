@@ -3,6 +3,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { db } from '../db.js'
 import { type AuthedRequest } from '../lib/auth.js'
+import { resolveArtistCountry } from '../lib/country.js'
 import { isValidDate, todayLocalISO } from '../lib/dates.js'
 import { mediaReviews, reviews, users } from '../schema.js'
 import type { MediaReview } from '../schema.js'
@@ -218,6 +219,25 @@ router.put('/albums/:albumId/reviews/me', async (req: AuthedRequest, res) => {
     media = upserted ?? null
   } else if (data.mediaReview === null) {
     await db.delete(mediaReviews).where(eq(mediaReviews.reviewId, saved.id))
+  }
+
+  // Se o app não enviou o país do artista, resolve em background (cache + MusicBrainz)
+  // e atualiza a linha depois — nunca bloqueia o save.
+  const artistName = data.albumArtist.trim()
+  if (artistName && !(data.albumCountry ?? null)) {
+    void (async () => {
+      try {
+        const country = await resolveArtistCountry(artistName)
+        if (country) {
+          await db
+            .update(reviews)
+            .set({ albumCountry: country, updatedAt: new Date() })
+            .where(eq(reviews.id, saved.id))
+        }
+      } catch (err) {
+        console.warn('[country] falha ao enriquecer review:', err)
+      }
+    })()
   }
 
   res.status(200).json({ review: toReviewJson(saved, media) })

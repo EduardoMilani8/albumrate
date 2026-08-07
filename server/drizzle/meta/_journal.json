@@ -50,6 +50,13 @@
       "when": 1786129863290,
       "tag": "0006_stale_silver_samurai",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1786133336166,
+      "tag": "0007_fast_wither",
+      "breakpoints": true
     }
   ]
 }

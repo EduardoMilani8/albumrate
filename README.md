@@ -19,6 +19,7 @@ Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, em tema dark
 - **Onboarding de importação** ao conectar: puxa foto/nome/país, top artistas, **gêneros favoritos** (até 5, mostrados no perfil), últimos álbuns ouvidos (→ diário de escuta) e biblioteca salva (→ lista "Importado do Spotify")
 - **Perfil** com suas avaliações (mais recentes primeiro), avatar do Spotify, gêneros favoritos, card de conexão (conectar/reconectar/desconectar) e logout
 - **Índice de diversidade musical** no perfil: score 0–100 (entropia de Shannon normalizada sobre a distribuição de gêneros), gráfico donut de gêneros e distribuições por década e país do artista
+- **Mapa-múndi de origens** no perfil: mostra de quais países vêm os artistas que você ouviu (intensidade de cor = nº de álbuns, toque/hover para detalhes). Países faltantes são resolvidos em background via **MusicBrainz** (cache no backend)
 - Status local: **avaliado** (`logged`) ou **quero ouvir** (`want_to_listen`), com filtro "Quero ouvir" na home (só marca quem ainda não avaliou)
 - Estatísticas na home: total de álbuns avaliados e sua nota média
 
@@ -119,7 +120,8 @@ albumrate/
 │   ├── MediaReviewCard.tsx # card de avaliação de mídia física (dentro da resenha)
 │   ├── ListFormModal.tsx   # modal criar/editar lista (nome, descrição, público/privado)
 │   ├── AddToListModal.tsx  # modal "Adicionar a uma lista" na página do álbum
-│   └── DiversityChart.tsx  # donut de diversidade (react-native-svg) + legenda
+│   ├── DiversityChart.tsx  # donut de diversidade (react-native-svg) + legenda
+│   └── WorldMap.tsx        # mapa-múndi de origens dos artistas (react-native-svg)
 ├── constants/theme.ts      # tema dark: colors, spacing, radius
 ├── lib/
 │   ├── api.ts              # cliente HTTP do backend
@@ -129,6 +131,7 @@ albumrate/
 │   ├── spotify.ts          # busca de álbuns via proxy do backend (/api/spotify/search)
 │   ├── spotifyAuth.ts      # OAuth PKCE manual (verifier S256, abre navegador)
 │   ├── useSpotifySignIn.ts # hook do login Spotify + diálogo de conflito de conta
+│   ├── worldMapData.ts     # mapa SVG vendored @svg-maps/world (CC-BY-4.0, 256 países)
 │   └── types.ts            # tipos compartilhados
 └── server/                 # API: Express 5 + Postgres (Drizzle) — ver README
 ```
@@ -138,7 +141,7 @@ albumrate/
 - **Web:** o suporte web do `expo-sqlite` é **alpha**. No Chrome o OPFS pode falhar ao abrir o banco (bug conhecido, tela branca). O alvo de teste é o celular (Expo Go).
 - Reviews e notas **ficam no backend**. O SQLite local só guarda a lista "Meus Álbuns" com status.
 - O gênero vem sempre nulo na busca do Spotify (a API não expõe gênero no objeto de álbum). O app **enriquece** gênero/ano/país via **API pública do Deezer** (best-effort, sem chave) na tela do álbum e salva junto do review/log.
-- O **país do artista** (código ISO) vem do Deezer só quando disponível; o score de diversidade usa gênero + década, e o país entra no gráfico apenas se preenchido.
+- O **país do artista** (código ISO) vem do Deezer só quando disponível; o score de diversidade usa gênero + década, e o país entra no mapa apenas se preenchido. Os que faltam são resolvidos em background pelo backend via **MusicBrainz** (tabela `artists` como cache): no save de review/log e via `POST /api/me/countries/backfill`, disparado ao abrir o perfil. Respostas 429/503/erro de rede não são cacheadas (re-tentadas depois); país não encontrado é cacheado como `null`.
 - A busca do Spotify limita a **10 resultados** (`limit=10`); valores maiores retornam 400 `Invalid limit`.
 - `listenedAt` é validado no backend como data real e não futura.
 - `server/`: cadastro/login com **rate limit** (20 req/15 min/IP); limitador global em `/api` (120 req/min/IP) e mais apertado em `/api/me/spotify` (10 req/min/IP). **CORS restrito** via `CORS_ORIGINS` e **helmet** habilitado. Token JWT expira em 30 dias.

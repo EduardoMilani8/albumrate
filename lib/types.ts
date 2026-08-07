@@ -156,6 +156,12 @@ export interface DiversityScoreResponse {
   countryDistribution: DiversityBucket[]
 }
 
+export interface CountryBackfillResponse {
+  resolved: number
+  remaining: number
+  total: number
+}
+
 export interface SpotifyRecentAlbum {
   albumId: string
   title: string

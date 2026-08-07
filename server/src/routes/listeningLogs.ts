@@ -3,6 +3,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { db } from '../db.js'
 import { type AuthedRequest } from '../lib/auth.js'
+import { resolveArtistCountry } from '../lib/country.js'
 import { isValidDate, todayLocalISO } from '../lib/dates.js'
 import { listeningLogs } from '../schema.js'
 import type { ListeningLog } from '../schema.js'
@@ -98,6 +99,25 @@ router.post('/me/listening-logs', async (req: AuthedRequest, res) => {
     res.status(500).json({ error: 'Não foi possível registrar.' })
     return
   }
+
+  // Enriquecimento best-effort do país do artista em background (cache + MusicBrainz).
+  const artistName = data.albumArtist.trim()
+  if (artistName && !(data.albumCountry ?? null)) {
+    void (async () => {
+      try {
+        const country = await resolveArtistCountry(artistName)
+        if (country) {
+          await db
+            .update(listeningLogs)
+            .set({ albumCountry: country })
+            .where(eq(listeningLogs.id, log.id))
+        }
+      } catch (err) {
+        console.warn('[country] falha ao enriquecer log:', err)
+      }
+    })()
+  }
+
   res.status(201).json({ log: toLogJson(log) })
 })
 

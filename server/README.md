@@ -48,6 +48,7 @@ Tudo sob `/api`. Rotas de reviews exigem `Authorization: Bearer <token>`.
 | `GET` | `/albums/:albumId/reviews` | Nota média, total e lista de resenhas do álbum (+ `myReview`) |
 | `GET` | `/me/reviews` | Avaliações do usuário logado, mais recentes primeiro |
 | `GET` | `/users/:id/diversity-score` | Índice de diversidade musical (entropia de Shannon normalizada 0–100) + distribuições por gênero, década e país do artista |
+| `POST` | `/me/countries/backfill` | Resolve países de origem faltantes (cache `artists` + MusicBrainz, ~13s/chamada, re-invocar até completar) → `{resolved, remaining, total}` |
 | `POST` | `/auth/spotify/begin` | Inicia o login com Spotify → `{state}` (anti-CSRF, expira em 10 min) |
 | `POST` | `/auth/spotify/exchange` | Troca `{code, codeVerifier, redirectUri, state}` → `{token, user}` ou `{conflict, existingUser, pendingLinkToken}` |
 | `POST` | `/auth/spotify/link` | Finaliza conflito de conta `{pendingLinkToken, linkMode: link\|new}` → `{token, user}` |
@@ -86,7 +87,9 @@ Regras de validação (zod):
 - `albumId` na rota: no máximo 100 caracteres.
 - Senha: 6–72 caracteres (limite de 72 bytes do bcrypt).
 
-O `diversity-score` calcula a entropia de Shannon sobre a distribuição de gêneros dos álbuns distintos (união de `reviews` + `listening_logs`, metadata da review tem prioridade): `score = H/log2(n) × 100`. `score = 0` se todos os álbuns do mesmo gênero; `score = null` se nenhum álbum tem gênero.
+O `diversity-score` calcula a entropia de Shannon sobre a distribuição de gêneros dos álbuns distintos (união de `reviews` + `listening_logs`, metadata da review tem prioridade): `score = H/log2(n) × 100`. `score = 0` se todos os álbuns do mesmo gênero; `score = null` se nenhum álbum tem gênero. Os códigos de país da `countryDistribution` são normalizados para ISO alpha-2 maiúsculo (`normalizeCountryCode`).
+
+**País de origem dos artistas:** o `albumCountry` vem do Deezer no app (best-effort, às vezes vazio). O server resolve os faltantes via **MusicBrainz** (`lib/country.ts`), com cache na tabela `artists` (chave = nome normalizado em lowercase; `country` pode ser `null` para "não encontrado"). Lookups usam `User-Agent` descritivo; erros 429/503/rede devolvem "retry later" (não cacheados). O backfill (`POST /me/countries/backfill`) é chamado pelo app ao abrir o perfil e roda ~13s por chamada (1s de spacing entre requests) até zerar.
 
 ## Scripts
 

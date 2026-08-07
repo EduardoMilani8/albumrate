@@ -1,3 +1,5 @@
+import { normalizeCountryCode } from './country.js'
+
 export interface AlbumMetadata {
   albumId: string
   genre: string | null
@@ -61,7 +63,7 @@ export function computeDiversity(albums: AlbumMetadata[]): DiversityResult {
 
   const genreValues = albums.map((album) => album.genre)
   const yearValues = albums.map((album) => album.year)
-  const countryValues = albums.map((album) => album.country)
+  const countryValues = albums.map((album) => normalizeCountryCode(album.country))
 
   const genreDistribution = buildDistribution(genreValues)
   const decadeDistribution = buildDistribution(
@@ -90,7 +92,7 @@ export function computeDiversity(albums: AlbumMetadata[]): DiversityResult {
     albumsWithMetadata: {
       genre: genreDistribution.reduce((sum, bucket) => sum + bucket.count, 0),
       year: yearValues.filter((year) => year !== null && year > 0).length,
-      country: countryValues.filter((country) => country !== null && country !== '').length,
+      country: countryDistribution.reduce((sum, bucket) => sum + bucket.count, 0),
     },
     genreDistribution,
     decadeDistribution,

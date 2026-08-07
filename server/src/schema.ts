@@ -111,6 +111,14 @@ export const lists = pgTable(
   (table) => [index('lists_user_idx').on(table.userId)],
 )
 
+export const artists = pgTable('artists', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull().unique(),
+  country: text('country'),
+  source: text('source'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
 export const listAlbums = pgTable(
   'list_albums',
   {
@@ -160,3 +168,5 @@ export type AlbumList = typeof lists.$inferSelect
 export type NewAlbumList = typeof lists.$inferInsert
 export type ListAlbum = typeof listAlbums.$inferSelect
 export type NewListAlbum = typeof listAlbums.$inferInsert
+export type Artist = typeof artists.$inferSelect
+export type NewArtist = typeof artists.$inferInsert

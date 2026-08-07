@@ -1,10 +1,11 @@
 import { FontAwesome5, Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { router, useFocusEffect } from 'expo-router'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import StarRating from '../components/StarRating'
 import DiversityChart from '../components/DiversityChart'
+import WorldMap from '../components/WorldMap'
 import { colors, radius, spacing } from '../constants/theme'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
@@ -24,6 +25,8 @@ export default function ProfileScreen() {
   const [diversity, setDiversity] = useState<DiversityScoreResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [spotifyLoading, setSpotifyLoading] = useState(false)
+  const [countryBackfillPending, setCountryBackfillPending] = useState(false)
+  const backfillRunningRef = useRef(false)
 
   useFocusEffect(
     useCallback(() => {
@@ -37,14 +40,35 @@ export default function ProfileScreen() {
           if (active) setLoading(false)
         })
       if (user?.id) {
-        api
-          .diversityScore(user.id)
-          .then((data) => {
-            if (active) setDiversity(data)
-          })
-          .catch((err) => {
+        void (async () => {
+          try {
+            const data = await api.diversityScore(user.id)
+            if (!active) return
+            setDiversity(data)
+            // Se ainda há álbuns sem país de origem, resolve em background
+            // (cache + MusicBrainz) e atualiza o mapa. O cache evita repetir
+            // consultas ao MusicBrainz em acessos seguintes.
+            const incomplete = data.albumsWithMetadata.country < data.totalAlbums
+            if (incomplete && !backfillRunningRef.current) {
+              backfillRunningRef.current = true
+              setCountryBackfillPending(true)
+              try {
+                await api.backfillCountries()
+                if (active) {
+                  const updated = await api.diversityScore(user.id)
+                  if (active) setDiversity(updated)
+                }
+              } catch (err) {
+                console.warn(err)
+              } finally {
+                backfillRunningRef.current = false
+                setCountryBackfillPending(false)
+              }
+            }
+          } catch (err) {
             console.warn(err)
-          })
+          }
+        })()
       }
       return () => {
         active = false
@@ -153,13 +177,21 @@ export default function ProfileScreen() {
           ListHeaderComponent={
             <View style={styles.listHeader}>
               {diversity ? (
-                <DiversityChart
-                  score={diversity.score}
-                  totalAlbums={diversity.totalAlbums}
-                  genreDistribution={diversity.genreDistribution}
-                  decadeDistribution={diversity.decadeDistribution}
-                  countryDistribution={diversity.countryDistribution}
-                />
+                <>
+                  <DiversityChart
+                    score={diversity.score}
+                    totalAlbums={diversity.totalAlbums}
+                    genreDistribution={diversity.genreDistribution}
+                    decadeDistribution={diversity.decadeDistribution}
+                    countryDistribution={diversity.countryDistribution}
+                  />
+                  {diversity.totalAlbums > 0 ? (
+                    <WorldMap
+                      distribution={diversity.countryDistribution}
+                      pending={countryBackfillPending}
+                    />
+                  ) : null}
+                </>
               ) : null}
 
               {user && user.favoriteGenres.length > 0 ? (
