@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db.js'
 import { authenticate, signToken, type AuthedRequest } from '../lib/auth.js'
@@ -31,7 +31,7 @@ router.post('/register', async (req, res) => {
   }
 
   const existing = await db.query.users.findFirst({
-    where: eq(users.email, parsed.data.email),
+    where: eq(sql`lower(${users.email})`, parsed.data.email),
   })
   if (existing) {
     res.status(409).json({ error: 'Já existe uma conta com este e-mail.' })

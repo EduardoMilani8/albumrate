@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { Router } from 'express'
 import { z } from 'zod'
 import { db } from '../db.js'
@@ -125,8 +125,13 @@ router.post('/exchange', async (req, res) => {
     return
   }
 
+  // Busca case-insensitive (lower(users.email) = profile.email): além da
+  // normalização no getSpotifyMe, isso também encontra contas legadas com o
+  // e-mail salvo em caixa mista e evita duplicatas.
   const matchedUser = profile.email
-    ? await db.query.users.findFirst({ where: eq(users.email, profile.email) })
+    ? await db.query.users.findFirst({
+        where: eq(sql`lower(${users.email})`, profile.email.toLowerCase()),
+      })
     : null
 
   if (matchedUser) {
@@ -223,7 +228,7 @@ async function createSpotifyUser(
   const created = await db
     .insert(users)
     .values({
-      email: options?.forceNullEmail ? null : profile.email ?? null,
+      email: options?.forceNullEmail ? null : profile.email?.toLowerCase().trim() ?? null,
       name: profile.displayName,
       passwordHash: null,
       avatarUrl: profile.imageUrl,
