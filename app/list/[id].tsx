@@ -28,7 +28,7 @@ export default function ListDetailScreen() {
   const load = useCallback(() => {
     let active = true
     api
-      .getList(params.id)
+      .getPublicList(params.id)
       .then((data) => {
         if (!active) return
         setList(data.list)
@@ -175,19 +175,25 @@ export default function ListDetailScreen() {
               </View>
 
               <View style={styles.headerActions}>
-                <Pressable style={styles.secondaryButton} onPress={() => setEditVisible(true)}>
-                  <Ionicons name="create-outline" size={16} color={colors.text} />
-                  <Text style={styles.secondaryButtonText}>Editar lista</Text>
-                </Pressable>
-                <Pressable style={styles.deleteListButton} onPress={deleteList} hitSlop={8}>
-                  <Ionicons name="trash-outline" size={18} color={colors.accent} />
-                </Pressable>
+                {list.isOwner ? (
+                  <Pressable style={styles.secondaryButton} onPress={() => setEditVisible(true)}>
+                    <Ionicons name="create-outline" size={16} color={colors.text} />
+                    <Text style={styles.secondaryButtonText}>Editar lista</Text>
+                  </Pressable>
+                ) : null}
+                {list.isOwner ? (
+                  <Pressable style={styles.deleteListButton} onPress={deleteList} hitSlop={8}>
+                    <Ionicons name="trash-outline" size={18} color={colors.accent} />
+                  </Pressable>
+                ) : null}
               </View>
 
-              <Pressable style={styles.addButton} onPress={() => router.push(`/search?listId=${list.id}`)}>
-                <Ionicons name="add" size={20} color={colors.background} />
-                <Text style={styles.addButtonText}>Adicionar álbum</Text>
-              </Pressable>
+              {list.isOwner ? (
+                <Pressable style={styles.addButton} onPress={() => router.push(`/search?listId=${list.id}`)}>
+                  <Ionicons name="add" size={20} color={colors.background} />
+                  <Text style={styles.addButtonText}>Adicionar álbum</Text>
+                </Pressable>
+              ) : null}
 
               {reordering ? (
                 <ActivityIndicator color={colors.accent} style={styles.reordering} />
@@ -227,33 +233,35 @@ export default function ListDetailScreen() {
                 </Text>
               </View>
             </Pressable>
-            <View style={styles.albumActions}>
-              <Pressable
-                onPress={() => moveUp(index)}
-                disabled={index === 0 || reordering}
-                hitSlop={6}
-              >
-                <Ionicons
-                  name="chevron-up"
-                  size={20}
-                  color={index === 0 || reordering ? colors.textMuted : colors.text}
-                />
-              </Pressable>
-              <Pressable
-                onPress={() => moveDown(index)}
-                disabled={index === albums.length - 1 || reordering}
-                hitSlop={6}
-              >
-                <Ionicons
-                  name="chevron-down"
-                  size={20}
-                  color={index === albums.length - 1 || reordering ? colors.textMuted : colors.text}
-                />
-              </Pressable>
-              <Pressable onPress={() => removeAlbum(item)} hitSlop={6}>
-                <Ionicons name="trash-outline" size={18} color={colors.accent} />
-              </Pressable>
-            </View>
+            {list.isOwner ? (
+              <View style={styles.albumActions}>
+                <Pressable
+                  onPress={() => moveUp(index)}
+                  disabled={index === 0 || reordering}
+                  hitSlop={6}
+                >
+                  <Ionicons
+                    name="chevron-up"
+                    size={20}
+                    color={index === 0 || reordering ? colors.textMuted : colors.text}
+                  />
+                </Pressable>
+                <Pressable
+                  onPress={() => moveDown(index)}
+                  disabled={index === albums.length - 1 || reordering}
+                  hitSlop={6}
+                >
+                  <Ionicons
+                    name="chevron-down"
+                    size={20}
+                    color={index === albums.length - 1 || reordering ? colors.textMuted : colors.text}
+                  />
+                </Pressable>
+                <Pressable onPress={() => removeAlbum(item)} hitSlop={6}>
+                  <Ionicons name="trash-outline" size={18} color={colors.accent} />
+                </Pressable>
+              </View>
+            ) : null}
           </View>
         )}
         ListEmptyComponent={

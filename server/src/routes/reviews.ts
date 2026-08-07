@@ -110,6 +110,7 @@ function mediaReviewJson(media: MediaReview) {
 function toReviewJson(
   review: {
     id: string
+    userId: string
     albumId: string
     albumTitle: string
     albumArtist: string
@@ -135,7 +136,7 @@ function toReviewJson(
     createdAt: review.createdAt.toISOString(),
     updatedAt: review.updatedAt.toISOString(),
     mediaReview: media ? mediaReviewJson(media) : null,
-    user: review.userName ? { name: review.userName } : undefined,
+    user: review.userId && review.userName ? { id: review.userId, name: review.userName } : undefined,
   }
 }
 

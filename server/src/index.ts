@@ -11,6 +11,7 @@ import diversityRouter from './routes/diversity.js'
 import listeningLogsRouter from './routes/listeningLogs.js'
 import listsRouter from './routes/lists.js'
 import reviewsRouter from './routes/reviews.js'
+import socialRouter from './routes/social.js'
 import spotifyRouter from './routes/spotify.js'
 import spotifyAuthRouter from './routes/spotifyAuth.js'
 
@@ -90,6 +91,7 @@ app.use('/api', listsRouter)
 app.use('/api', diversityRouter)
 app.use('/api', dailyPickRouter)
 app.use('/api', countriesRouter)
+app.use('/api', socialRouter)
 app.use('/api/me/spotify', spotifyImportLimiter)
 app.use('/api', spotifyRouter)
 

@@ -74,6 +74,7 @@ function RootNavigator() {
           <Stack.Screen name="lists" options={{ title: 'Minhas Listas' }} />
           <Stack.Screen name="list/[id]" options={{ title: '' }} />
           <Stack.Screen name="profile" options={{ title: 'Perfil' }} />
+          <Stack.Screen name="user/[id]" options={{ title: '' }} />
           <Stack.Screen name="spotify-onboarding" options={{ headerShown: false }} />
         </Stack.Protected>
         <Stack.Protected guard={!user}>

@@ -6,6 +6,7 @@ import type {
   CountryBackfillResponse,
   DailyPickResponse,
   DiversityScoreResponse,
+  FeedResponse,
   ListeningLog,
   ListeningLogsResponse,
   ListAlbum,
@@ -17,6 +18,8 @@ import type {
   SpotifyRecentAlbum,
   SpotifyAlbumResult,
   SpotifyTopArtist,
+  UserProfile,
+  UserSearchResult,
 } from './types'
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080'
@@ -298,5 +301,39 @@ export const api = {
     return request<{ albums: SpotifyAlbumResult[] }>(
       `/api/spotify/search?q=${encodeURIComponent(query)}`,
     )
+  },
+
+  getUserProfile(id: string) {
+    return request<{ user: UserProfile }>(`/api/users/${id}`)
+  },
+
+  getUserReviews(userId: string) {
+    return request<{ reviews: Review[] }>(`/api/users/${userId}/reviews`)
+  },
+
+  followUser(id: string) {
+    return request<void>(`/api/users/${id}/follow`, { method: 'PUT' })
+  },
+
+  unfollowUser(id: string) {
+    return request<void>(`/api/users/${id}/follow`, { method: 'DELETE' })
+  },
+
+  searchUsers(query: string) {
+    return request<{ users: UserSearchResult[] }>(
+      `/api/users/search?q=${encodeURIComponent(query)}`,
+    )
+  },
+
+  getFeed(before?: string, beforeId?: string) {
+    const params = new URLSearchParams()
+    if (before) params.set('before', before)
+    if (beforeId) params.set('beforeId', beforeId)
+    const query = params.toString()
+    return request<FeedResponse>(`/api/feed${query ? `?${query}` : ''}`)
+  },
+
+  getPublicList(id: string) {
+    return request<AlbumListDetailResponse>(`/api/lists/${id}`)
   },
 }

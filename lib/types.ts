@@ -51,6 +51,7 @@ export interface MediaReview {
 }
 
 export interface ReviewUser {
+  id: string
   name: string | null
 }
 
@@ -106,6 +107,7 @@ export interface AlbumListSummary {
   name: string
   description: string | null
   isPublic: boolean
+  isOwner: boolean
   createdAt: string
   updatedAt: string
   albumCount: number
@@ -201,3 +203,73 @@ export interface SpotifyExistingUser {
 export type SpotifyExchangeResult =
   | { token: string; user: AuthUser }
   | { conflict: true; existingUser: SpotifyExistingUser; pendingLinkToken: string }
+
+export interface UserProfile {
+  id: string
+  name: string | null
+  avatarUrl: string | null
+  country: string | null
+  favoriteGenres: string[]
+  counts: { reviews: number; followers: number; following: number }
+  isFollowing: boolean
+  isSelf: boolean
+}
+
+export interface UserSearchResult {
+  id: string
+  name: string | null
+  avatarUrl: string | null
+  country: string | null
+  favoriteGenres: string[]
+  isFollowing: boolean
+}
+
+export interface FeedUser {
+  id: string
+  name: string | null
+  avatarUrl: string | null
+}
+
+export interface FeedAlbum {
+  albumId: string
+  title: string
+  artist: string
+  artworkUrl: string | null
+}
+
+export interface FeedReviewItem {
+  type: 'review'
+  id: string
+  createdAt: string
+  user: FeedUser
+  album: FeedAlbum
+  rating: number
+  reviewText: string | null
+  listenedAt: string
+}
+
+export interface FeedLogItem {
+  type: 'log'
+  id: string
+  createdAt: string
+  user: FeedUser
+  album: FeedAlbum
+  listenedAt: string
+}
+
+export interface FeedListItem {
+  type: 'list'
+  id: string
+  createdAt: string
+  user: FeedUser
+  list: { name: string; description: string | null; albumCount: number; coverArtworkUrl: string | null }
+}
+
+export type FeedItem = FeedReviewItem | FeedLogItem | FeedListItem
+
+export interface FeedResponse {
+  items: FeedItem[]
+  nextBefore: string | null
+  nextBeforeId: string | null
+  followingCount: number
+}

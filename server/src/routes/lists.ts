@@ -65,13 +65,14 @@ const reorderSchema = z.object({
 
 function toListJson(
   list: AlbumList,
-  extra: { albumCount: number; coverArtworkUrl: string | null },
+  extra: { albumCount: number; coverArtworkUrl: string | null; isOwner?: boolean },
 ) {
   return {
     id: list.id,
     name: list.name,
     description: list.description,
     isPublic: list.isPublic,
+    isOwner: extra.isOwner ?? true,
     createdAt: list.createdAt.toISOString(),
     updatedAt: list.updatedAt.toISOString(),
     albumCount: extra.albumCount,
@@ -201,7 +202,7 @@ router.get('/lists/:id', async (req: AuthedRequest, res) => {
     .where(eq(listAlbums.listId, list.id))
     .orderBy(asc(listAlbums.position))
 
-  res.json({ list: toListJson(list, { albumCount: albums.length, coverArtworkUrl: albums[0]?.albumArtworkUrl ?? null }), albums: albums.map(toAlbumJson) })
+  res.json({ list: toListJson(list, { albumCount: albums.length, coverArtworkUrl: albums[0]?.albumArtworkUrl ?? null, isOwner: list.userId === req.userId }), albums: albums.map(toAlbumJson) })
 })
 
 router.patch('/me/lists/:id', async (req: AuthedRequest, res) => {

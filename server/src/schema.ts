@@ -111,6 +111,25 @@ export const lists = pgTable(
   (table) => [index('lists_user_idx').on(table.userId)],
 )
 
+export const follows = pgTable(
+  'follows',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    followerId: uuid('follower_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    followingId: uuid('following_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('follows_follower_following_unique').on(table.followerId, table.followingId),
+    index('follows_follower_idx').on(table.followerId),
+    index('follows_following_idx').on(table.followingId),
+  ],
+)
+
 export const artists = pgTable('artists', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull().unique(),
@@ -192,3 +211,5 @@ export type DailyPick = typeof dailyPicks.$inferSelect
 export type NewDailyPick = typeof dailyPicks.$inferInsert
 export type Artist = typeof artists.$inferSelect
 export type NewArtist = typeof artists.$inferInsert
+export type Follow = typeof follows.$inferSelect
+export type NewFollow = typeof follows.$inferInsert

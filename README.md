@@ -23,6 +23,7 @@ Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, em tema dark
 - Status local: **avaliado** (`logged`) ou **quero ouvir** (`want_to_listen`), com filtro "Quero ouvir" na home (só marca quem ainda não avaliou)
 - **Álbum aleatório do dia**: botão em destaque na home; um sorteio por dia por usuário (prioriza gêneros de menor frequência no seu histórico para puxar diversidade, com fallback para aleatório puro). Depois de sorteado, o botão é substituído pelo card do álbum + "volte amanhã"
 - Estatísticas na home: total de álbuns avaliados e sua nota média
+- **Social**: seguir/deixar de seguir usuários (botão no perfil público), contadores de seguidores/seguindo, busca de pessoas na tela de busca e **feed de atividade na home** com o que quem você segue está fazendo (reviews novas, álbuns marcados no diário e listas criadas). Cada item leva à tela correspondente; listas privadas nunca aparecem no feed
 
 ## Stack
 
@@ -104,16 +105,17 @@ Verifique tipos antes de commitar: `npx tsc --noEmit` (app) e `cd server && npx 
 albumrate/
 ├── app/                    # rotas (expo-router)
 │   ├── _layout.tsx         # providers + Stack com rotas protegidas (login)
-│   ├── index.tsx           # home: estatísticas, álbum do dia, lista, filtro Quero ouvir, FAB
-│   ├── search.tsx          # busca no Spotify
+│   ├── index.tsx           # home: estatísticas, álbum do dia, abas Meus Álbuns/Atividade (feed), FAB
+│   ├── search.tsx          # busca: abas Álbuns (Spotify) e Pessoas (usuários)
 │   ├── album/[id].tsx      # detalhe: média, resenhas, avaliar, quero ouvir, ouvir hoje, adicionar a lista
 │   ├── diary.tsx           # Meu Diário: timeline de escutas agrupada por mês
 │   ├── lists.tsx           # Minhas listas: criar/abrir listas temáticas
-│   ├── list/[id].tsx       # detalhe da lista: adicionar, remover, reordenar álbuns
+│   ├── list/[id].tsx       # detalhe da lista: adicionar, remover, reordenar álbuns (somente leitura se não for sua)
 │   ├── login.tsx           # entrada na conta (e-mail/senha ou botão Spotify)
 │   ├── register.tsx        # cadastro (e-mail/senha ou botão Spotify)
 │   ├── spotify-onboarding.tsx # wizard de importação após conectar o Spotify
-│   └── profile.tsx         # perfil: avaliações, avatar, gêneros favoritos, conexão Spotify, logout
+│   ├── profile.tsx         # perfil: avaliações, avatar, gêneros favoritos, conexão Spotify, logout
+│   └── user/[id].tsx       # perfil público: dados, seguidores/seguindo, botão Seguir, avaliações
 ├── components/
 │   ├── AlbumCard.tsx       # card de álbum nas listas
 │   ├── DailyPickCard.tsx   # card "Álbum aleatório do dia" na home (sortear / já sorteado)
@@ -122,6 +124,7 @@ albumrate/
 │   ├── MediaReviewCard.tsx # card de avaliação de mídia física (dentro da resenha)
 │   ├── ListFormModal.tsx   # modal criar/editar lista (nome, descrição, público/privado)
 │   ├── AddToListModal.tsx  # modal "Adicionar a uma lista" na página do álbum
+│   ├── FeedItem.tsx        # item do feed de atividade (review, escuta ou lista)
 │   ├── DiversityChart.tsx  # donut de diversidade (react-native-svg) + legenda
 │   └── WorldMap.tsx        # mapa-múndi de origens dos artistas (react-native-svg)
 ├── constants/theme.ts      # tema dark: colors, spacing, radius
@@ -150,6 +153,7 @@ albumrate/
 - **Login com Spotify:** escopos `user-read-email user-read-private user-top-read user-read-recently-played user-library-read user-follow-read`. O servidor troca o `code` (PKCE) e guarda os tokens **criptografados** (AES-256-GCM) com `TOKEN_ENCRYPTION_KEY`; refresh automático com rotação. `users.email`/`password_hash` são opcionais (contas só do Spotify). Estado anti-CSRF (`state`) validado nas duas pontas.
 - **Segurança da busca:** o Client Secret do Spotify fica só no servidor; o app busca via `GET /api/spotify/search` (autenticado, com rate limit). Reviews públicas (`GET /api/albums/:albumId/reviews`) expõem só o `name` do autor, nunca o e-mail. O Spotify não oferece revogação de token por API — ao desconectar, apagamos nosso copy e o app continua listado em "Aplicações aprovadas" do usuário.
 - **Gêneros favoritos:** salvos via `PUT /api/me/favorite-genres` durante o onboarding (até 5, detectados dos top artistas) e exibidos no perfil.
+- **Social:** tabela `follows` (unique `follower_id + following_id`, cascade). Perfil público `GET /api/users/:id` (sem e-mail), seguir/deixar de seguir via `PUT/DELETE /api/users/:id/follow`, busca de pessoas `GET /api/users/search?q=` e feed `GET /api/feed` (reviews + escutas + listas **públicas** de quem você segue, paginado por cursor `before`/`beforeId`). As resenhas públicas (`GET /api/albums/:albumId/reviews`) agora expõem `user.id` para navegar ao perfil; listas públicas retornam `isOwner`.
 
 ## Licença
 

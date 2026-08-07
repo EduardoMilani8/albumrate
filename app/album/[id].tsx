@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
-import { useLocalSearchParams } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
@@ -284,9 +284,15 @@ export default function AlbumDetailScreen() {
           {otherReviews.map((review) => (
             <View key={review.id} style={styles.reviewCard}>
               <View style={styles.reviewHeader}>
-                <Text style={styles.reviewAuthor}>
-                  {review.user?.name || 'Anônimo'}
-                </Text>
+                {review.user?.id ? (
+                  <Pressable onPress={() => router.push(`/user/${review.user!.id}`)} hitSlop={6}>
+                    <Text style={styles.reviewAuthor}>
+                      {review.user?.name || 'Anônimo'}
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <Text style={styles.reviewAuthor}>{review.user?.name || 'Anônimo'}</Text>
+                )}
                 <Text style={styles.reviewMeta}>
                   {formatReviewDate(review.createdAt)} · {formatListenedAt(review.listenedAt)}
                 </Text>

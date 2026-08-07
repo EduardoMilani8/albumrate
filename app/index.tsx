@@ -5,10 +5,13 @@ import { useCallback, useState } from 'react'
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import AlbumCard from '../components/AlbumCard'
 import DailyPickCard from '../components/DailyPickCard'
+import FeedItem from '../components/FeedItem'
 import { colors, radius, spacing } from '../constants/theme'
 import { api } from '../lib/api'
 import { getAllAlbums } from '../lib/db'
-import type { DailyPick, LoggedAlbum, Review } from '../lib/types'
+import type { DailyPick, FeedItem as FeedItemType, LoggedAlbum, Review } from '../lib/types'
+
+type HomeTab = 'albums' | 'feed'
 
 export default function IndexScreen() {
   const db = useSQLiteContext()
@@ -19,6 +22,13 @@ export default function IndexScreen() {
   const [dailyPick, setDailyPick] = useState<DailyPick | null>(null)
   const [dailyPickLoading, setDailyPickLoading] = useState(true)
   const [dailyPicking, setDailyPicking] = useState(false)
+  const [tab, setTab] = useState<HomeTab>('albums')
+  const [feedItems, setFeedItems] = useState<FeedItemType[]>([])
+  const [feedLoading, setFeedLoading] = useState(true)
+  const [feedFollowingCount, setFeedFollowingCount] = useState(0)
+  const [feedNextBefore, setFeedNextBefore] = useState<string | null>(null)
+  const [feedNextBeforeId, setFeedNextBeforeId] = useState<string | null>(null)
+  const [feedLoadingMore, setFeedLoadingMore] = useState(false)
 
   useFocusEffect(
     useCallback(() => {
@@ -52,11 +62,41 @@ export default function IndexScreen() {
         .finally(() => {
           if (active) setDailyPickLoading(false)
         })
+      api
+        .getFeed()
+        .then((data) => {
+          if (!active) return
+          setFeedItems(data.items)
+          setFeedFollowingCount(data.followingCount)
+          setFeedNextBefore(data.nextBefore)
+          setFeedNextBeforeId(data.nextBeforeId)
+        })
+        .catch((err) => {
+          console.warn(err)
+        })
+        .finally(() => {
+          if (active) setFeedLoading(false)
+        })
       return () => {
         active = false
       }
     }, [db]),
   )
+
+  const loadMoreFeed = async () => {
+    if (feedLoadingMore || !feedNextBefore || !feedNextBeforeId) return
+    setFeedLoadingMore(true)
+    try {
+      const data = await api.getFeed(feedNextBefore, feedNextBeforeId)
+      setFeedItems((current) => [...current, ...data.items])
+      setFeedNextBefore(data.nextBefore)
+      setFeedNextBeforeId(data.nextBeforeId)
+    } catch (err) {
+      console.warn(err)
+    } finally {
+      setFeedLoadingMore(false)
+    }
+  }
 
   const logged = albums.filter((album) => album.status === 'logged')
   const visibleAlbums =
@@ -94,6 +134,42 @@ export default function IndexScreen() {
     })
   }
 
+  const renderFeed = () => {
+    if (feedLoading) {
+      return <ActivityIndicator color={colors.accent} style={styles.loading} />
+    }
+    return (
+      <FlatList
+        data={feedItems}
+        keyExtractor={(item) => `${item.type}:${item.id}`}
+        renderItem={({ item }) => <FeedItem item={item} />}
+        onEndReached={loadMoreFeed}
+        onEndReachedThreshold={0.4}
+        ListFooterComponent={
+          feedLoadingMore ? (
+            <ActivityIndicator color={colors.accent} style={styles.feedFooter} />
+          ) : null
+        }
+        contentContainerStyle={styles.feedList}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Ionicons name="people-outline" size={56} color={colors.textMuted} />
+            <Text style={styles.emptyText}>
+              {feedFollowingCount === 0
+                ? 'Você ainda não segue ninguém. Busque pessoas para ver as atividades delas aqui.'
+                : 'Nenhuma atividade recente de quem você segue.'}
+            </Text>
+            {feedFollowingCount === 0 ? (
+              <Pressable style={styles.emptyButton} onPress={() => router.push('/search')}>
+                <Text style={styles.emptyButtonText}>Buscar pessoas</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        }
+      />
+    )
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.stats}>
@@ -117,55 +193,80 @@ export default function IndexScreen() {
       />
 
       <View style={styles.segmented}>
-        {(['all', 'want_to_listen'] as const).map((key) => {
-          const active = filter === key
+        {(['albums', 'feed'] as const).map((key) => {
+          const active = tab === key
           return (
             <Pressable
               key={key}
               style={[styles.segment, active && styles.segmentActive]}
-              onPress={() => setFilter(key)}
+              onPress={() => setTab(key)}
             >
               <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
-                {key === 'all' ? 'Todos' : 'Quero ouvir'}
+                {key === 'albums' ? 'Meus Álbuns' : 'Atividade'}
               </Text>
             </Pressable>
           )
         })}
       </View>
 
-      {loading ? (
-        <ActivityIndicator color={colors.accent} style={styles.loading} />
+      {tab === 'feed' ? (
+        renderFeed()
       ) : (
-        <FlatList
-          data={visibleAlbums}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => {
-            const myRating = reviews.find((review) => review.albumId === item.id)?.rating ?? null
-            return (
-              <AlbumCard
-                album={item}
-                rating={myRating}
-                onPress={() => router.push(`/album/${item.id}`)}
-              />
-            )
-          }}
-          contentContainerStyle={styles.list}
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Ionicons name="disc-outline" size={56} color={colors.textMuted} />
-              <Text style={styles.emptyText}>
-                {filter === 'want_to_listen'
-                  ? 'Nenhum álbum marcado como quero ouvir ainda.'
-                  : 'Nenhum álbum por aqui ainda. Toque no + para buscar e avaliar.'}
-              </Text>
-            </View>
-          }
-        />
+        <>
+          <View style={styles.segmented}>
+            {(['all', 'want_to_listen'] as const).map((key) => {
+              const active = filter === key
+              return (
+                <Pressable
+                  key={key}
+                  style={[styles.segment, active && styles.segmentActive]}
+                  onPress={() => setFilter(key)}
+                >
+                  <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
+                    {key === 'all' ? 'Todos' : 'Quero ouvir'}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </View>
+
+          {loading ? (
+            <ActivityIndicator color={colors.accent} style={styles.loading} />
+          ) : (
+            <FlatList
+              data={visibleAlbums}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => {
+                const myRating = reviews.find((review) => review.albumId === item.id)?.rating ?? null
+                return (
+                  <AlbumCard
+                    album={item}
+                    rating={myRating}
+                    onPress={() => router.push(`/album/${item.id}`)}
+                  />
+                )
+              }}
+              contentContainerStyle={styles.list}
+              ListEmptyComponent={
+                <View style={styles.empty}>
+                  <Ionicons name="disc-outline" size={56} color={colors.textMuted} />
+                  <Text style={styles.emptyText}>
+                    {filter === 'want_to_listen'
+                      ? 'Nenhum álbum marcado como quero ouvir ainda.'
+                      : 'Nenhum álbum por aqui ainda. Toque no + para buscar e avaliar.'}
+                  </Text>
+                </View>
+              }
+            />
+          )}
+        </>
       )}
 
-      <Pressable style={styles.fab} onPress={() => router.push('/search')}>
-        <Ionicons name="add" size={28} color={colors.background} />
-      </Pressable>
+      {tab === 'albums' ? (
+        <Pressable style={styles.fab} onPress={() => router.push('/search')}>
+          <Ionicons name="add" size={28} color={colors.background} />
+        </Pressable>
+      ) : null}
     </View>
   )
 }
@@ -236,6 +337,13 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.sm,
   },
+  feedList: {
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  feedFooter: {
+    paddingVertical: spacing.md,
+  },
   loading: {
     flex: 1,
   },
@@ -249,6 +357,19 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 15,
     textAlign: 'center',
+  },
+  emptyButton: {
+    height: 44,
+    borderRadius: 500,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyButtonText: {
+    color: colors.background,
+    fontSize: 15,
+    fontWeight: '700',
   },
   fab: {
     position: 'absolute',
