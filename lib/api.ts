@@ -47,14 +47,21 @@ interface RequestOptions {
   body?: unknown
 }
 
+function logRequest(method: string, path: string, status: string, startedAt: number): void {
+  if (process.env.NODE_ENV === 'production') return
+  console.log(`[api] ${method} ${path} → ${status} (${Date.now() - startedAt}ms)`)
+}
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const method = options.method ?? 'GET'
+  const startedAt = Date.now()
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
 
   let response: Response
   try {
     response = await fetch(`${API_URL}${path}`, {
-      method: options.method ?? 'GET',
+      method,
       headers: {
         'Content-Type': 'application/json',
         ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
@@ -63,6 +70,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       signal: controller.signal,
     })
   } catch (err) {
+    logRequest(method, path, controller.signal.aborted ? 'TIMEOUT' : 'SEM CONEXÃO', startedAt)
     if (controller.signal.aborted) {
       throw new ApiError(0, 'O servidor demorou para responder. Tente novamente.')
     }
@@ -70,6 +78,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   } finally {
     clearTimeout(timeout)
   }
+
+  logRequest(method, path, String(response.status), startedAt)
 
   if (response.status === 204) return undefined as T
 
