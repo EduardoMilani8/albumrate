@@ -51,7 +51,6 @@ export interface MediaReview {
 }
 
 export interface ReviewUser {
-  email: string | null
   name: string | null
 }
 

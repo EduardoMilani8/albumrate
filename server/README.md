@@ -24,6 +24,7 @@ npm run dev            # tsx watch → http://localhost:8080
    - `DATABASE_URL=postgres://...` (do passo 2)
    - `JWT_SECRET=<senha longa e aleatória>`
    - `PORT` (o Railway injeta automaticamente)
+   - `CORS_ORIGINS=http://localhost:8081` (opcional; inclua a origem do web em produção, se houver)
    - Para o login/importação com Spotify: `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` (do app no developer.spotify.com) e `TOKEN_ENCRYPTION_KEY` (gere com `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`)
 5. Deploy. O serviço roda `node dist/migrate.js && node dist/index.js` automaticamente (cria as tabelas e sobe na porta certa).
 6. A URL pública fica em `Settings → Networking → Public Networking` (ex.: `https://albumrate-server.up.railway.app`).
@@ -50,6 +51,7 @@ Tudo sob `/api`. Rotas de reviews exigem `Authorization: Bearer <token>`.
 | `POST` | `/auth/spotify/begin` | Inicia o login com Spotify → `{state}` (anti-CSRF, expira em 10 min) |
 | `POST` | `/auth/spotify/exchange` | Troca `{code, codeVerifier, redirectUri, state}` → `{token, user}` ou `{conflict, existingUser, pendingLinkToken}` |
 | `POST` | `/auth/spotify/link` | Finaliza conflito de conta `{pendingLinkToken, linkMode: link\|new}` → `{token, user}` |
+| `GET` | `/spotify/search?q=` | Busca de álbuns no catálogo público (proxy do app via Client Credentials) |
 | `GET` | `/me/spotify/recently-played` | Últimos álbuns ouvidos no Spotify (faixas recentes agrupadas, máx 30) |
 | `GET` | `/me/spotify/top-artists` | Top artistas do Spotify (com gêneros) |
 | `POST` | `/me/spotify/import/recently-played` | Importa álbuns selecionados para o diário de escuta (dedup `album_id\|listened_at`) |
@@ -100,6 +102,9 @@ O `diversity-score` calcula a entropia de Shannon sobre a distribuição de gên
 - `.env` é local e **não** vai pro git (raiz do repo ignora `.env`).
 - Senhas com bcrypt (10 rounds). Token JWT expira em 30 dias.
 - O `JWT_SECRET` deve ser trocado no deploy.
-- **Rate limit** em `/api/auth` (cadastro/login): 20 requisições / 15 min / IP (`express-rate-limit`).
+- **Rate limit** (`express-rate-limit`): `/api/auth` e `/api/auth/spotify` 20 req / 15 min / IP; global em `/api` 120 req / min / IP; `/api/me/spotify` (importações) 10 req / min / IP.
 - `app.set('trust proxy', 1)` — necessário para o rate limit pegar o IP real atrás de proxies (Railway/Render).
-- **Spotify:** o `SPOTIFY_CLIENT_SECRET` nunca vai pro app — a troca do `code` e o refresh acontecem no servidor. Tokens de acesso/refresh ficam **criptografados** no banco (AES-256-GCM) com `TOKEN_ENCRYPTION_KEY`; se a chave for perdida, usuários precisam reconectar. Token revogado/expirado devolve `{code: "spotify_reconnect_required"}` (app pede reconexão sem derrubar o login).
+- **CORS restrito** via `CORS_ORIGINS` (vírgula, padrão `http://localhost:8081`); apps nativos não enviam `Origin`. **helmet** habilitado (headers de segurança).
+- **Spotify:** o `SPOTIFY_CLIENT_SECRET` nunca vai pro app — a troca do `code`, o refresh e a busca (`GET /spotify/search`) acontecem no servidor. Tokens de acesso/refresh ficam **criptografados** no banco (AES-256-GCM) com `TOKEN_ENCRYPTION_KEY`; se a chave for perdida, usuários precisam reconectar. Token revogado/expirado devolve `{code: "spotify_reconnect_required"}` (app pede reconexão sem derrubar o login).
+- E-mails de usuários são **normalizados** (lowercase) no cadastro e no login Spotify (evita contas duplicadas por case). Reviews públicas expõem só `user.name`, nunca e-mail.
+- O Spotify **não oferece revogação de token por API** — ao desconectar, apagamos nosso copy dos tokens; o app continua em "Aplicações aprovadas" da conta do usuário até ele revogar lá.

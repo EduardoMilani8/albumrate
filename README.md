@@ -34,7 +34,7 @@ Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, em tema dark
 | Autenticação | E-mail/senha (JWT) **ou** Spotify OAuth 2.0 (Authorization Code + PKCE, `expo-auth-session`) |
 | Imagens | expo-image |
 | Ícones | @expo/vector-icons (Ionicons, FontAwesome5) |
-| Busca | Spotify Web API (Client Credentials flow) |
+| Busca | Spotify Web API (Client Credentials flow, via proxy no backend) |
 
 ## Como rodar
 
@@ -54,11 +54,10 @@ Crie o arquivo `.env` na raiz (veja `.env.example`):
 
 ```sh
 EXPO_PUBLIC_SPOTIFY_CLIENT_ID=seu_client_id
-EXPO_PUBLIC_SPOTIFY_CLIENT_SECRET=seu_client_secret
 EXPO_PUBLIC_API_URL=https://albumrate-production.up.railway.app
 ```
 
-> **Atenção:** as credenciais do Spotify ficam embutidas no bundle (Client Credentials é feito para servidor-servidor). Aceitável para uso pessoal; para produção o ideal é um proxy. No login OAuth, o **Client Secret fica só no servidor** — o app envia apenas o Client ID.
+> **A busca de álbuns usa um proxy no backend** (`GET /api/spotify/search`) — o Client Secret do Spotify fica **só no servidor** (`server/.env`), nunca no app. No login OAuth, o app envia apenas o Client ID.
 >
 > **Redirect URIs do login com Spotify** (cadastre no painel developer.spotify.com): em Expo Go use o `exp://...` exato que aparece no log `[spotify] redirect URI usada pelo app: ...` do terminal (`npx expo start`); no APK final, registre `albumrate://` (e variantes `albumrate:///`, `albumrate://--/`).
 
@@ -127,7 +126,7 @@ albumrate/
 │   ├── auth.tsx            # AuthContext + expo-secure-store (e-mail e Spotify)
 │   ├── db.ts               # SQLite local (status da lista)
 │   ├── metadata.ts         # enriquecimento Deezer (gênero/ano/país, best-effort)
-│   ├── spotify.ts          # wrapper da API do Spotify (busca)
+│   ├── spotify.ts          # busca de álbuns via proxy do backend (/api/spotify/search)
 │   ├── spotifyAuth.ts      # OAuth PKCE manual (verifier S256, abre navegador)
 │   ├── useSpotifySignIn.ts # hook do login Spotify + diálogo de conflito de conta
 │   └── types.ts            # tipos compartilhados
@@ -142,8 +141,9 @@ albumrate/
 - O **país do artista** (código ISO) vem do Deezer só quando disponível; o score de diversidade usa gênero + década, e o país entra no gráfico apenas se preenchido.
 - A busca do Spotify limita a **10 resultados** (`limit=10`); valores maiores retornam 400 `Invalid limit`.
 - `listenedAt` é validado no backend como data real e não futura.
-- `server/`: cadastro/login com **rate limit** (20 req/15 min/IP). Token JWT expira em 30 dias.
+- `server/`: cadastro/login com **rate limit** (20 req/15 min/IP); limitador global em `/api` (120 req/min/IP) e mais apertado em `/api/me/spotify` (10 req/min/IP). **CORS restrito** via `CORS_ORIGINS` e **helmet** habilitado. Token JWT expira em 30 dias.
 - **Login com Spotify:** escopos `user-read-email user-read-private user-top-read user-read-recently-played user-library-read user-follow-read`. O servidor troca o `code` (PKCE) e guarda os tokens **criptografados** (AES-256-GCM) com `TOKEN_ENCRYPTION_KEY`; refresh automático com rotação. `users.email`/`password_hash` são opcionais (contas só do Spotify). Estado anti-CSRF (`state`) validado nas duas pontas.
+- **Segurança da busca:** o Client Secret do Spotify fica só no servidor; o app busca via `GET /api/spotify/search` (autenticado, com rate limit). Reviews públicas (`GET /api/albums/:albumId/reviews`) expõem só o `name` do autor, nunca o e-mail. O Spotify não oferece revogação de token por API — ao desconectar, apagamos nosso copy e o app continua listado em "Aplicações aprovadas" do usuário.
 - **Gêneros favoritos:** salvos via `PUT /api/me/favorite-genres` durante o onboarding (até 5, detectados dos top artistas) e exibidos no perfil.
 
 ## Licença

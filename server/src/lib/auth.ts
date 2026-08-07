@@ -29,7 +29,7 @@ export function authenticate(req: AuthedRequest, res: Response, next: NextFuncti
     return
   }
   try {
-    const payload = jwt.verify(header.slice(7), JWT_SECRET)
+    const payload = jwt.verify(header.slice(7), JWT_SECRET, { algorithms: ['HS256'] })
     if (typeof payload === 'string' || !payload.sub) {
       throw new Error('Payload inválido')
     }

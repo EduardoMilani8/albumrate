@@ -9,11 +9,38 @@ import {
   getRecentlyPlayedAlbums,
   getSavedAlbums,
   getTopArtists,
+  searchAlbums,
+  SpotifyError,
   SpotifyReconnectRequiredError,
 } from '../lib/spotify.js'
 import { listeningLogs, listAlbums, lists, users } from '../schema.js'
 
 const router = Router()
+
+const searchQuerySchema = z.object({
+  q: z.string().trim().min(1, 'Informe um termo de busca.').max(200, 'Busca muito longa.'),
+})
+
+router.get('/spotify/search', async (req: AuthedRequest, res) => {
+  const parsed = searchQuerySchema.safeParse(req.query)
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Parâmetros inválidos.' })
+    return
+  }
+
+  try {
+    const albums = await searchAlbums(parsed.data.q)
+    res.json({ albums })
+  } catch (err) {
+    // Chamada servidor-a-servidor com credenciais do servidor: falha aqui é
+    // problema de config/quota do Spotify, não do usuário.
+    if (err instanceof SpotifyError) {
+      res.status(502).json({ error: 'Busca indisponível no momento. Tente novamente.' })
+      return
+    }
+    throw err
+  }
+})
 
 function handleSpotifyError(res: Response, err: unknown): boolean {
   if (err instanceof SpotifyReconnectRequiredError) {

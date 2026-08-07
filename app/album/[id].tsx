@@ -285,7 +285,7 @@ export default function AlbumDetailScreen() {
             <View key={review.id} style={styles.reviewCard}>
               <View style={styles.reviewHeader}>
                 <Text style={styles.reviewAuthor}>
-                  {review.user?.name || review.user?.email || 'Anônimo'}
+                  {review.user?.name || 'Anônimo'}
                 </Text>
                 <Text style={styles.reviewMeta}>
                   {formatReviewDate(review.createdAt)} · {formatListenedAt(review.listenedAt)}

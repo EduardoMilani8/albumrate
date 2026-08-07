@@ -16,6 +16,8 @@ import { users, type User } from '../schema.js'
 const router = Router()
 
 const STATE_TTL_MS = 10 * 60 * 1000
+const MAX_PENDING_STATES = 10_000
+const MAX_PENDING_LINKS = 1_000
 const pendingStates = new Map<string, number>()
 
 interface PendingLink {
@@ -28,7 +30,23 @@ interface PendingLink {
 }
 const pendingLinks = new Map<string, PendingLink>()
 
+// Estados e vínculos pendentes vivem em memória (instância única). Para evitar
+// crescimento sem limite, expiramos periodicamente e barramos acima de um teto.
+setInterval(() => {
+  const now = Date.now()
+  for (const [state, expiresAt] of pendingStates) {
+    if (expiresAt < now) pendingStates.delete(state)
+  }
+  for (const [token, link] of pendingLinks) {
+    if (link.linkExpiresAt < now) pendingLinks.delete(token)
+  }
+}, STATE_TTL_MS / 2).unref()
+
 router.post('/begin', (_req, res) => {
+  if (pendingStates.size >= MAX_PENDING_STATES) {
+    res.status(429).json({ error: 'Muitas sessões de autenticação. Tente novamente em instantes.' })
+    return
+  }
   const state = randomBytes(16).toString('base64url')
   pendingStates.set(state, Date.now() + STATE_TTL_MS)
   res.json({ state })
@@ -112,6 +130,12 @@ router.post('/exchange', async (req, res) => {
     : null
 
   if (matchedUser) {
+    if (pendingLinks.size >= MAX_PENDING_LINKS) {
+      res
+        .status(429)
+        .json({ error: 'Muitas sessões de vínculo. Tente novamente em instantes.' })
+      return
+    }
     const pendingLinkToken = randomBytes(24).toString('base64url')
     pendingLinks.set(pendingLinkToken, {
       spotify: profile,

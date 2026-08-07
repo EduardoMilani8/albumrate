@@ -101,6 +101,11 @@ async function fetchSpotifyToken(form: Record<string, string>): Promise<SpotifyT
   return data!
 }
 
+async function getClientCredentialsToken(): Promise<string> {
+  const tokens = await fetchSpotifyToken({ grant_type: 'client_credentials' })
+  return tokens.access_token
+}
+
 async function spotifyGet<T>(path: string, accessToken: string): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -135,10 +140,41 @@ export async function getSpotifyMe(accessToken: string): Promise<SpotifyProfile>
   return {
     id: me.id,
     displayName: me.display_name ?? null,
-    email: me.email ?? null,
+    // Spotify pode devolver o e-mail com qualquer caixa; normalizamos para bater
+    // com o que é salvo no cadastro (lowercase) e evitar contas duplicadas.
+    email: me.email?.toLowerCase().trim() ?? null,
     country: me.country ?? null,
     imageUrl: me.images[0]?.url ?? null,
   }
+}
+
+export interface SearchAlbum {
+  id: string
+  title: string
+  artist: string
+  artworkUrl: string | null
+  releaseDate: string | null
+  genre: string | null
+}
+
+/**
+ * Busca de álbuns no catálogo público via Client Credentials. Usado como proxy
+ * para o app, que assim nunca recebe o Client Secret (credencial só no servidor).
+ */
+export async function searchAlbums(query: string, limit = 10): Promise<SearchAlbum[]> {
+  const token = await getClientCredentialsToken()
+  const data = await spotifyGet<{ albums: { items: SpotifyAlbumObject[] } | null }>(
+    `/search?q=${encodeURIComponent(query)}&type=album&limit=${limit}`,
+    token,
+  )
+  return (data.albums?.items ?? []).map((album) => ({
+    id: album.id,
+    title: album.name,
+    artist: (album.artists ?? []).map((artist) => artist.name).join(', ') || 'Artista desconhecido',
+    artworkUrl: album.images[0]?.url ?? null,
+    releaseDate: album.release_date ?? null,
+    genre: null,
+  }))
 }
 
 export async function exchangeSpotifyCode({

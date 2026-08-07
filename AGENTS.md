@@ -33,7 +33,6 @@ Necessárias para o app (`.env`, ver `.env.example`):
 
 ```
 EXPO_PUBLIC_SPOTIFY_CLIENT_ID=
-EXPO_PUBLIC_SPOTIFY_CLIENT_SECRET=
 EXPO_PUBLIC_API_URL=https://albumrate-production.up.railway.app
 ```
 
@@ -42,8 +41,9 @@ Necessárias para o server (`server/.env`, ver `server/.env.example`):
 ```
 DATABASE_URL=postgres://...
 JWT_SECRET=...
+CORS_ORIGINS=http://localhost:8081   # origens web permitidas (vírgula); apps nativos não enviam Origin
 SPOTIFY_CLIENT_ID=...
-SPOTIFY_CLIENT_SECRET=...
+SPOTIFY_CLIENT_SECRET=...   # usado no OAuth E no proxy de busca (GET /api/spotify/search) — nunca no app
 TOKEN_ENCRYPTION_KEY=...   # 64 hex chars; tokens do Spotify são criptografados com ela (AES-256-GCM)
 ```
 
@@ -54,8 +54,8 @@ TOKEN_ENCRYPTION_KEY=...   # 64 hex chars; tokens do Spotify são criptografados
 - `app/` — rotas expo-router (`_layout.tsx`, `index.tsx`, `search.tsx`, `album/[id].tsx`, `diary.tsx`, `lists.tsx`, `list/[id].tsx`, `login.tsx`, `register.tsx`, `spotify-onboarding.tsx`, `profile.tsx`)
 - `components/` — `AlbumCard`, `StarRating`, `ReviewModal`, `MediaReviewCard`, `ListFormModal`, `AddToListModal`, `DiversityChart` (donut de gêneros com react-native-svg)
 - `constants/` — `theme.ts` (colors/spacing/radius dark; usar sempre)
-- `lib/` — `db.ts` (SQLite local, só status `logged`/`want_to_listen`), `spotify.ts` (API de busca), `spotifyAuth.ts` (OAuth PKCE manual: verifier S256, abre navegador), `useSpotifySignIn.ts` (hook do login Spotify + diálogo de conflito), `metadata.ts` (enriquecimento de gênero/ano/país via API pública do Deezer), `types.ts`, `api.ts` (cliente HTTP do backend), `auth.tsx` (AuthContext + SecureStore)
-- `server/` — API Node/Express + Postgres (Drizzle): `src/schema.ts`, `src/routes/{auth,spotifyAuth,reviews,listeningLogs,lists,diversity,spotify}.ts`, `src/lib/{dates,diversity,user,spotify}.ts` (spotify.ts server-side: criptografia AES-256-GCM + exchange/refresh/imports do Spotify), `src/migrate.ts`, `drizzle/` (migrações geradas), `Dockerfile`, `.dockerignore`
+- `lib/` — `db.ts` (SQLite local, só status `logged`/`want_to_listen`), `spotify.ts` (proxy de busca via backend `GET /api/spotify/search` — credenciais só no servidor), `spotifyAuth.ts` (OAuth PKCE manual: verifier S256, abre navegador), `useSpotifySignIn.ts` (hook do login Spotify + diálogo de conflito), `metadata.ts` (enriquecimento de gênero/ano/país via API pública do Deezer), `types.ts`, `api.ts` (cliente HTTP do backend), `auth.tsx` (AuthContext + SecureStore)
+- `server/` — API Node/Express + Postgres (Drizzle): `src/schema.ts`, `src/routes/{auth,spotifyAuth,reviews,listeningLogs,lists,diversity,spotify}.ts`, `src/lib/{dates,diversity,user,spotify}.ts` (spotify.ts server-side: criptografia AES-256-GCM + exchange/refresh/imports/busca via Client Credentials), `src/migrate.ts`, `drizzle/` (migrações geradas), `Dockerfile`, `.dockerignore`
 - `metro.config.js` — `.wasm` como asset + headers COEP/COOP (expo-sqlite web)
 
 ## Conventions
@@ -65,7 +65,7 @@ TOKEN_ENCRYPTION_KEY=...   # 64 hex chars; tokens do Spotify são criptografados
 - **Reviews/notas ficam no backend.** O SQLite local só guarda a lista "Meus Álbuns" com status (`logged`/`want_to_listen`). As colunas `rating`/`review` da tabela local são legadas.
 - **Metadata de álbum (gênero/ano/país) também fica no backend**: colunas `album_genre`/`album_year`/`album_country` em `reviews` e `listening_logs`. O app enriquece via Deezer (best-effort) na tela do álbum e envia junto ao salvar review/log. Endpoint de diversidade: `GET /api/users/:id/diversity-score` (entropia de Shannon normalizada 0–100 sobre a distribuição de gêneros; também devolve distribuições por gênero/década/país).
 - **Listas temáticas também vivem no backend** (`lists`/`list_albums` no Postgres). A capa da lista é calculada do primeiro álbum (não há coluna de capa). Reordenação usa botões subir/descer (sem lib de drag-and-drop).
-- **Login com Spotify:** OAuth Authorization Code + PKCE. `SPOTIFY_CLIENT_SECRET` **nunca** vai pro app — o server troca o `code`, guarda e faz refresh dos tokens. Tokens ficam **criptografados** (AES-256-GCM) no banco com `TOKEN_ENCRYPTION_KEY`. `users.email`/`password_hash` são opcionais (contas só do Spotify). Conflito de e-mail → diálogo Vincular/Criar conta nova via `pendingLinkToken`. Estado anti-CSRF (`state`) validado nas duas pontas (begin/exchange). Escopos: `user-read-email user-read-private user-top-read user-read-recently-played user-library-read user-follow-read`.
+- **Login com Spotify:** OAuth Authorization Code + PKCE. `SPOTIFY_CLIENT_SECRET` **nunca** vai pro app — o server troca o `code`, guarda e faz refresh dos tokens (e serve a busca via `GET /api/spotify/search`). Tokens ficam **criptografados** (AES-256-GCM) no banco com `TOKEN_ENCRYPTION_KEY`. `users.email`/`password_hash` são opcionais (contas só do Spotify). E-mails são **normalizados** (lowercase) tanto no cadastro quanto no login Spotify. Conflito de e-mail → diálogo Vincular/Criar conta nova via `pendingLinkToken`. Estado anti-CSRF (`state`) validado nas duas pontas (begin/exchange). Escopos: `user-read-email user-read-private user-top-read user-read-recently-played user-library-read user-follow-read`.
 - **Gêneros favoritos** (`users.favorite_genres`, `text[]`): salvos via `PUT /api/me/favorite-genres` (zod, máx 10) durante o onboarding (detectados dos top artistas, máx 5 na UI) e exibidos no perfil. Vêm em `user.favoriteGenres` no `toPublicUser`.
 - Rotas do app são protegidas com `Stack.Protected` em `app/_layout.tsx` (guarda de login). Token JWT no `expo-secure-store`.
 - Imports de caminho relativo (ex.: `../constants/theme`). O alias `@/*` existe no tsconfig.
@@ -77,7 +77,7 @@ TOKEN_ENCRYPTION_KEY=...   # 64 hex chars; tokens do Spotify são criptografados
 
 ## Known issues / gotchas
 
-- **`btoa` não existe no RN** — `lib/spotify.ts` usa uma implementação própria de base64 (não troque por `btoa`).
+- **`btoa` não existe no RN** — `lib/spotifyAuth.ts` usa uma implementação própria de base64url (não troque por `btoa`).
 - **Busca do Spotify limita a 10 resultados** (`limit=10`): valores maiores (20/30/50) retornam 400 `Invalid limit` após mudança na API.
 - **Web + SQLite é alpha:** no Chrome o OPFS do `expo-sqlite` pode falhar ao abrir o banco (tela branca). O alvo de teste é mobile (Expo Go). Para mexer no web, confira `metro.config.js` (wasm + headers) e `app.json` → `web.output: "static"`.
 - `expo start` reescreve `tsconfig.json` automaticamente (gerencia o `include`) — não lute contra isso.
@@ -88,18 +88,23 @@ TOKEN_ENCRYPTION_KEY=...   # 64 hex chars; tokens do Spotify são criptografados
 - **Express 5** tipa `req.params.X` como `string | string[]` (não só `string`). Em `server/`, use `String(req.params.X)`.
 - `server/` usa `noUncheckedIndexedAccess` — desestruturar de `.returning()`/arrays pode dar `undefined`; trate antes de usar.
 - **`server/.dockerignore` NÃO pode excluir `drizzle/`**: o `migrate.ts` lê essa pasta em runtime (`node dist/migrate.js` no boot do container). Já houve bug disso antes.
-- **Rate limit** no `server`: `express-rate-limit` aplicado em `/api/auth` (20 req / 15 min / IP) e `app.set('trust proxy', 1)` para pegar o IP real atrás do Railway. Não remova.
+- **Rate limit** no `server`: `express-rate-limit` com `app.set('trust proxy', 1)` (IP real atrás do Railway). Limiters: `/api/auth` e `/api/auth/spotify` (20 req / 15 min / IP), global em `/api` (120 req / min / IP) e `/api/me/spotify` (10 req / min / IP, importações). Não remova.
+- **CORS restrito** via `CORS_ORIGINS` (vírgula). Apps nativos não enviam `Origin` e seguem funcionando; o web precisa estar na lista.
+- **`helmet`** está habilitado no `server` (headers de segurança). `helmet` é dependência de produção do server (não remova do `npm ci`).
+- **Reviews públicas não expõem e-mail** (`GET /api/albums/:albumId/reviews` devolve só `user.name`).
+- **Spotify não tem endpoint de revogação de token**: ao desconectar, apagamos nosso copy dos tokens; o app continua listado nas "Aplicações aprovadas" da conta Spotify (o usuário pode revogar lá).
 - **Ordem dos mounts no `server/src/index.ts`:** `/api/auth/spotify` deve vir **antes** de `/api/auth` — se inverter, a requisição ao `begin` cai no `authenticate` e devolve `Token não fornecido.` (já houve bug disso durante o desenvolvimento).
 - **Redirect URI do Spotify:** o app loga a URI exata usada (`[spotify] redirect URI usada pelo app: ...` no terminal do `expo start`). Em Expo Go é um `exp://...` (não é o mesmo endereço que aparece nas configurações do Expo Go); no APK final, `albumrate://`.
 - **bcrypt limita a 72 bytes** — senhas com mais de 72 caracteres são rejeitadas no zod (max 72).
 - `listenedAt` no backend é validado como data real e **não futura** (senão o Postgres rejeita com 500).
 - `app/lib/auth.tsx`: token só é apagado em **401**; erro de rede mantém o token (para o usuário não ser deslogado à toa).
 - `app/lib/api.ts`: fetch com timeout de 20s via `AbortController`.
+- **`GET /api/auth/me` é autenticado** (o `authenticate` é aplicado dentro da rota, no `routes/auth.ts`).
 
 ## Deploy (Railway)
 
 - Serviço `albumrate-production` → Root Directory `server`, Dockerfile na raiz do serviço.
-- Variáveis no serviço: `DATABASE_URL` (Postgres do mesmo projeto), `JWT_SECRET`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` e `TOKEN_ENCRYPTION_KEY` (64 hex; não perder — sem ela os tokens salvos não são descriptografados). `PORT` é injetado pelo Railway (fallback 8080).
+- Variáveis no serviço: `DATABASE_URL` (Postgres do mesmo projeto), `JWT_SECRET`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` e `TOKEN_ENCRYPTION_KEY` (64 hex; não perder — sem ela os tokens salvos não são descriptografados). `PORT` é injetado pelo Railway (fallback 8080). `CORS_ORIGINS` opcional (padrão `http://localhost:8081`; inclua a origem do web em produção se houver).
 - Deploy automático a cada push no `master`. Boot roda `node dist/migrate.js && node dist/index.js` (aplica migrações e sobe).
 - **Plano free do Railway:** trial de 30 dias (US$ 5); depois vira plano Free (US$ 1/mês de crédito). Server + Postgres 24/7 passa de US$ 1 → deploy pausa (não apaga) até o reset mensal. Opções quando vencer: Hobby (US$ 5/mês) ou migrar Postgres para Supabase/Neon (free) e server para Render free.
 

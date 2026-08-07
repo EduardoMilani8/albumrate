@@ -118,7 +118,6 @@ function toReviewJson(
     listenedAt: string
     createdAt: Date
     updatedAt: Date
-    userEmail?: string | null
     userName?: string | null
   },
   media?: MediaReview | null,
@@ -135,9 +134,7 @@ function toReviewJson(
     createdAt: review.createdAt.toISOString(),
     updatedAt: review.updatedAt.toISOString(),
     mediaReview: media ? mediaReviewJson(media) : null,
-    user: review.userEmail || review.userName
-      ? { email: review.userEmail ?? null, name: review.userName ?? null }
-      : undefined,
+    user: review.userName ? { name: review.userName } : undefined,
   }
 }
 
@@ -265,7 +262,6 @@ router.get('/albums/:albumId/reviews', async (req: AuthedRequest, res) => {
       listenedAt: reviews.listenedAt,
       createdAt: reviews.createdAt,
       updatedAt: reviews.updatedAt,
-      userEmail: users.email,
       userName: users.name,
     })
     .from(reviews)

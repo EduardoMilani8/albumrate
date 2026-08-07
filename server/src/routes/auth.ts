@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db.js'
-import { signToken, type AuthedRequest } from '../lib/auth.js'
+import { authenticate, signToken, type AuthedRequest } from '../lib/auth.js'
 import { hashPassword, verifyPassword } from '../lib/password.js'
 import { toPublicUser } from '../lib/user.js'
 import { users } from '../schema.js'
@@ -86,7 +86,7 @@ router.post('/login', async (req, res) => {
   })
 })
 
-router.get('/me', async (req: AuthedRequest, res) => {
+router.get('/me', authenticate, async (req: AuthedRequest, res) => {
   const user = await db.query.users.findFirst({
     where: eq(users.id, req.userId!),
     columns: {

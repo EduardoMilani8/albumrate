@@ -13,6 +13,7 @@ import type {
   Review,
   SpotifyExchangeResult,
   SpotifyRecentAlbum,
+  SpotifyAlbumResult,
   SpotifyTopArtist,
 } from './types'
 
@@ -274,5 +275,11 @@ export const api = {
 
   diversityScore(userId: string) {
     return request<DiversityScoreResponse>(`/api/users/${userId}/diversity-score`)
+  },
+
+  searchSpotifyAlbums(query: string) {
+    return request<{ albums: SpotifyAlbumResult[] }>(
+      `/api/spotify/search?q=${encodeURIComponent(query)}`,
+    )
   },
 }
