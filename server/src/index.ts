@@ -8,6 +8,8 @@ import diversityRouter from './routes/diversity.js'
 import listeningLogsRouter from './routes/listeningLogs.js'
 import listsRouter from './routes/lists.js'
 import reviewsRouter from './routes/reviews.js'
+import spotifyRouter from './routes/spotify.js'
+import spotifyAuthRouter from './routes/spotifyAuth.js'
 
 const app = express()
 const port = Number(process.env.PORT ?? 8080)
@@ -31,6 +33,7 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true })
 })
 
+app.use('/api/auth/spotify', authLimiter, spotifyAuthRouter)
 app.use('/api/auth', authLimiter, authRouter)
 
 app.use('/api', authenticate)
@@ -38,6 +41,7 @@ app.use('/api', reviewsRouter)
 app.use('/api', listeningLogsRouter)
 app.use('/api', listsRouter)
 app.use('/api', diversityRouter)
+app.use('/api', spotifyRouter)
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Rota não encontrada.' })

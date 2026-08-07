@@ -118,7 +118,7 @@ function toReviewJson(
     listenedAt: string
     createdAt: Date
     updatedAt: Date
-    userEmail?: string
+    userEmail?: string | null
     userName?: string | null
   },
   media?: MediaReview | null,
@@ -135,8 +135,8 @@ function toReviewJson(
     createdAt: review.createdAt.toISOString(),
     updatedAt: review.updatedAt.toISOString(),
     mediaReview: media ? mediaReviewJson(media) : null,
-    user: review.userEmail
-      ? { email: review.userEmail, name: review.userName ?? null }
+    user: review.userEmail || review.userName
+      ? { email: review.userEmail ?? null, name: review.userName ?? null }
       : undefined,
   }
 }

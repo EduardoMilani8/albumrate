@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons'
+import { FontAwesome5, Ionicons } from '@expo/vector-icons'
 import { Link, router } from 'expo-router'
 import { useState } from 'react'
 import {
@@ -13,13 +13,16 @@ import {
 } from 'react-native'
 import { colors, radius, spacing } from '../constants/theme'
 import { useAuth } from '../lib/auth'
+import { useSpotifySignIn } from '../lib/useSpotifySignIn'
 
 export default function LoginScreen() {
   const { signIn } = useAuth()
+  const { run: runSpotifySignIn } = useSpotifySignIn()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [spotifyLoading, setSpotifyLoading] = useState(false)
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
@@ -38,6 +41,19 @@ export default function LoginScreen() {
     }
   }
 
+  const handleSpotify = async () => {
+    setError(null)
+    setSpotifyLoading(true)
+    try {
+      const ok = await runSpotifySignIn()
+      if (ok) router.replace('/spotify-onboarding')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível entrar com o Spotify.')
+    } finally {
+      setSpotifyLoading(false)
+    }
+  }
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -47,6 +63,23 @@ export default function LoginScreen() {
         <Ionicons name="disc" size={56} color={colors.accent} />
         <Text style={styles.title}>albumrate</Text>
         <Text style={styles.subtitle}>Entre para avaliar seus álbuns</Text>
+
+        <Pressable style={styles.spotifyButton} onPress={handleSpotify} disabled={spotifyLoading}>
+          {spotifyLoading ? (
+            <ActivityIndicator color={colors.spotify} />
+          ) : (
+            <>
+              <FontAwesome5 name="spotify" size={20} color="#191414" />
+              <Text style={styles.spotifyButtonText}>Entrar com Spotify</Text>
+            </>
+          )}
+        </Pressable>
+
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>ou</Text>
+          <View style={styles.dividerLine} />
+        </View>
 
         <TextInput
           style={styles.input}
@@ -106,6 +139,36 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 15,
     marginBottom: spacing.md,
+  },
+  spotifyButton: {
+    alignSelf: 'stretch',
+    height: 48,
+    borderRadius: 500,
+    backgroundColor: colors.spotify,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  spotifyButtonText: {
+    color: '#191414',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    alignSelf: 'stretch',
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    color: colors.textMuted,
+    fontSize: 13,
   },
   input: {
     alignSelf: 'stretch',

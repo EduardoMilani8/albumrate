@@ -14,9 +14,17 @@ import { relations } from 'drizzle-orm'
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
-  email: text('email').notNull().unique(),
+  email: text('email').unique(),
   name: text('name'),
-  passwordHash: text('password_hash').notNull(),
+  passwordHash: text('password_hash'),
+  avatarUrl: text('avatar_url'),
+  country: text('country'),
+  spotifyId: text('spotify_id').unique(),
+  spotifyAccessToken: text('spotify_access_token'),
+  spotifyRefreshToken: text('spotify_refresh_token'),
+  spotifyTokenExpiresAt: timestamp('spotify_token_expires_at', { withTimezone: true }),
+  spotifyConnectedAt: timestamp('spotify_connected_at', { withTimezone: true }),
+  favoriteGenres: text('favorite_genres').array(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })

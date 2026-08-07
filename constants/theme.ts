@@ -9,6 +9,7 @@ export const colors = {
   accentMuted: '#5A2620',
   star: '#F2B705',
   success: '#4CAF6D',
+  spotify: '#1DB954',
 } as const
 
 export const spacing = {

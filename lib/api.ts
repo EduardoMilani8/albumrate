@@ -11,6 +11,9 @@ import type {
   MediaType,
   MyReviewsResponse,
   Review,
+  SpotifyExchangeResult,
+  SpotifyRecentAlbum,
+  SpotifyTopArtist,
 } from './types'
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080'
@@ -24,10 +27,12 @@ export function setAuthToken(token: string | null): void {
 
 export class ApiError extends Error {
   status: number
+  code?: string
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string) {
     super(message)
     this.status = status
+    this.code = code
   }
 }
 
@@ -65,10 +70,16 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const data = await response.json().catch(() => null)
   if (!response.ok) {
     let errorMessage = 'Algo deu errado. Tente novamente.'
-    if (data && typeof data === 'object' && 'error' in data && typeof data.error === 'string') {
-      errorMessage = data.error
+    let errorCode: string | undefined
+    if (data && typeof data === 'object') {
+      if ('error' in data && typeof data.error === 'string') {
+        errorMessage = data.error
+      }
+      if ('code' in data && typeof data.code === 'string') {
+        errorCode = data.code
+      }
     }
-    throw new ApiError(response.status, errorMessage)
+    throw new ApiError(response.status, errorMessage, errorCode)
   }
   return data as T
 }
@@ -90,6 +101,57 @@ export const api = {
 
   me() {
     return request<{ user: AuthUser }>('/api/auth/me')
+  },
+
+  spotifyBegin() {
+    return request<{ state: string }>('/api/auth/spotify/begin', { method: 'POST' })
+  },
+
+  spotifyExchange(payload: { code: string; codeVerifier: string; redirectUri: string; state: string }) {
+    return request<SpotifyExchangeResult>('/api/auth/spotify/exchange', {
+      method: 'POST',
+      body: payload,
+    })
+  },
+
+  spotifyLink(payload: { pendingLinkToken: string; linkMode: 'link' | 'new' }) {
+    return request<{ token: string; user: AuthUser }>('/api/auth/spotify/link', {
+      method: 'POST',
+      body: payload,
+    })
+  },
+
+  spotifyRecentlyPlayed() {
+    return request<{ albums: SpotifyRecentAlbum[] }>('/api/me/spotify/recently-played')
+  },
+
+  spotifyTopArtists() {
+    return request<{ artists: SpotifyTopArtist[] }>('/api/me/spotify/top-artists')
+  },
+
+  importRecentlyPlayed(albumIds: string[]) {
+    return request<{ imported: number }>('/api/me/spotify/import/recently-played', {
+      method: 'POST',
+      body: { albumIds },
+    })
+  },
+
+  importSavedAlbums() {
+    return request<{ listId: string | null; imported: number }>(
+      '/api/me/spotify/import/saved-albums',
+      { method: 'POST', body: {} },
+    )
+  },
+
+  disconnectSpotify() {
+    return request<void>('/api/me/spotify/connection', { method: 'DELETE' })
+  },
+
+  updateFavoriteGenres(genres: string[]) {
+    return request<{ favoriteGenres: string[] }>('/api/me/favorite-genres', {
+      method: 'PUT',
+      body: { genres },
+    })
   },
 
   getAlbumReviews(albumId: string) {

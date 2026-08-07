@@ -1,6 +1,6 @@
 # Albumrate
 
-Aplicativo para registrar, avaliar e acompanhar álbuns. Busca de álbuns via API do Spotify, avaliação em estrelas (com meio-ponto), resenha, data em que ouviu, **avaliação opcional de mídia física** (qualidade da prensagem, condição), **diário de escuta** e perfil. Conta com **backend próprio** para usuários e avaliações.
+Aplicativo para registrar, avaliar e acompanhar álbuns. Busca de álbuns via API do Spotify, avaliação em estrelas (com meio-ponto), resenha, data em que ouviu, **avaliação opcional de mídia física** (qualidade da prensagem, condição), **diário de escuta** e perfil. Conta com **backend próprio** para usuários e avaliações e **login com Spotify** (OAuth 2.0 + PKCE) com importação opcional de dados.
 
 Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, em tema dark, + **Node/Express + Postgres (Drizzle)** no `server/`.
 
@@ -15,7 +15,9 @@ Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, em tema dark
 - **Diário de escuta**: botão "Marcar como ouvido hoje" na página do álbum + timeline "Meu Diário" agrupada por mês, com remoção de registros
 - **Listas temáticas de álbuns**: crie listas públicas ou privadas, adicione/remova/reordene álbuns (botões sobe/desce) e adicione um álbum a uma lista direto da sua página. A capa da lista é a do primeiro álbum
 - **Cadastro/login** com e-mail e senha (JWT, token salvo no `expo-secure-store`)
-- **Perfil** com suas avaliações (mais recentes primeiro), remoção e logout
+- **Login com Spotify** (OAuth 2.0 Authorization Code + PKCE): botão na entrada e no cadastro, sem senha. Contas são vinculadas por e-mail quando há conflito (vincular / criar conta nova / cancelar); tokens do Spotify ficam criptografados no servidor
+- **Onboarding de importação** ao conectar: puxa foto/nome/país, top artistas, **gêneros favoritos** (até 5, mostrados no perfil), últimos álbuns ouvidos (→ diário de escuta) e biblioteca salva (→ lista "Importado do Spotify")
+- **Perfil** com suas avaliações (mais recentes primeiro), avatar do Spotify, gêneros favoritos, card de conexão (conectar/reconectar/desconectar) e logout
 - **Índice de diversidade musical** no perfil: score 0–100 (entropia de Shannon normalizada sobre a distribuição de gêneros), gráfico donut de gêneros e distribuições por década e país do artista
 - Status local: **avaliado** (`logged`) ou **quero ouvir** (`want_to_listen`), com filtro "Quero ouvir" na home (só marca quem ainda não avaliou)
 - Estatísticas na home: total de álbuns avaliados e sua nota média
@@ -29,8 +31,9 @@ Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, em tema dark
 | Rotas | expo-router (rotas protegidas com `Stack.Protected`) |
 | Banco local | expo-sqlite (tabela `albums`, só status da lista) |
 | Backend | Node 22 + Express 5 + Postgres (Drizzle ORM) + JWT + bcrypt |
+| Autenticação | E-mail/senha (JWT) **ou** Spotify OAuth 2.0 (Authorization Code + PKCE, `expo-auth-session`) |
 | Imagens | expo-image |
-| Ícones | @expo/vector-icons (Ionicons) |
+| Ícones | @expo/vector-icons (Ionicons, FontAwesome5) |
 | Busca | Spotify Web API (Client Credentials flow) |
 
 ## Como rodar
@@ -55,7 +58,9 @@ EXPO_PUBLIC_SPOTIFY_CLIENT_SECRET=seu_client_secret
 EXPO_PUBLIC_API_URL=https://albumrate-production.up.railway.app
 ```
 
-> **Atenção:** as credenciais do Spotify ficam embutidas no bundle (Client Credentials é feito para servidor-servidor). Aceitável para uso pessoal; para produção o ideal é um proxy.
+> **Atenção:** as credenciais do Spotify ficam embutidas no bundle (Client Credentials é feito para servidor-servidor). Aceitável para uso pessoal; para produção o ideal é um proxy. No login OAuth, o **Client Secret fica só no servidor** — o app envia apenas o Client ID.
+>
+> **Redirect URIs do login com Spotify** (cadastre no painel developer.spotify.com): em Expo Go use o `exp://...` exato que aparece no log `[spotify] redirect URI usada pelo app: ...` do terminal (`npx expo start`); no APK final, registre `albumrate://` (e variantes `albumrate:///`, `albumrate://--/`).
 
 Rode:
 
@@ -104,9 +109,10 @@ albumrate/
 │   ├── diary.tsx           # Meu Diário: timeline de escutas agrupada por mês
 │   ├── lists.tsx           # Minhas listas: criar/abrir listas temáticas
 │   ├── list/[id].tsx       # detalhe da lista: adicionar, remover, reordenar álbuns
-│   ├── login.tsx           # entrada na conta
-│   ├── register.tsx        # cadastro
-│   └── profile.tsx         # perfil: avaliações do usuário, Minhas listas, Meu Diário, logout
+│   ├── login.tsx           # entrada na conta (e-mail/senha ou botão Spotify)
+│   ├── register.tsx        # cadastro (e-mail/senha ou botão Spotify)
+│   ├── spotify-onboarding.tsx # wizard de importação após conectar o Spotify
+│   └── profile.tsx         # perfil: avaliações, avatar, gêneros favoritos, conexão Spotify, logout
 ├── components/
 │   ├── AlbumCard.tsx       # card de álbum nas listas
 │   ├── StarRating.tsx      # avaliação por estrelas com meio-ponto
@@ -118,10 +124,12 @@ albumrate/
 ├── constants/theme.ts      # tema dark: colors, spacing, radius
 ├── lib/
 │   ├── api.ts              # cliente HTTP do backend
-│   ├── auth.tsx            # AuthContext + expo-secure-store
+│   ├── auth.tsx            # AuthContext + expo-secure-store (e-mail e Spotify)
 │   ├── db.ts               # SQLite local (status da lista)
 │   ├── metadata.ts         # enriquecimento Deezer (gênero/ano/país, best-effort)
-│   ├── spotify.ts          # wrapper da API do Spotify
+│   ├── spotify.ts          # wrapper da API do Spotify (busca)
+│   ├── spotifyAuth.ts      # OAuth PKCE manual (verifier S256, abre navegador)
+│   ├── useSpotifySignIn.ts # hook do login Spotify + diálogo de conflito de conta
 │   └── types.ts            # tipos compartilhados
 └── server/                 # API: Express 5 + Postgres (Drizzle) — ver README
 ```
@@ -135,6 +143,8 @@ albumrate/
 - A busca do Spotify limita a **10 resultados** (`limit=10`); valores maiores retornam 400 `Invalid limit`.
 - `listenedAt` é validado no backend como data real e não futura.
 - `server/`: cadastro/login com **rate limit** (20 req/15 min/IP). Token JWT expira em 30 dias.
+- **Login com Spotify:** escopos `user-read-email user-read-private user-top-read user-read-recently-played user-library-read user-follow-read`. O servidor troca o `code` (PKCE) e guarda os tokens **criptografados** (AES-256-GCM) com `TOKEN_ENCRYPTION_KEY`; refresh automático com rotação. `users.email`/`password_hash` são opcionais (contas só do Spotify). Estado anti-CSRF (`state`) validado nas duas pontas.
+- **Gêneros favoritos:** salvos via `PUT /api/me/favorite-genres` durante o onboarding (até 5, detectados dos top artistas) e exibidos no perfil.
 
 ## Licença
 

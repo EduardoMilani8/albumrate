@@ -1,6 +1,6 @@
 # albumrate-server
 
-API REST do Albumrate: autenticação (JWT) + avaliações de álbuns (nota, resenha, data ouvida).
+API REST do Albumrate: autenticação (JWT por e-mail/senha **ou** login com Spotify OAuth 2.0 + PKCE) + avaliações de álbuns (nota, resenha, data ouvida) + integração Spotify (tokens, importação de ouvidos recentes/álbuns salvos).
 
 Stack: Node 22 + TypeScript + Express 5 + Postgres (Drizzle ORM) + JWT + bcrypt.
 
@@ -24,6 +24,7 @@ npm run dev            # tsx watch → http://localhost:8080
    - `DATABASE_URL=postgres://...` (do passo 2)
    - `JWT_SECRET=<senha longa e aleatória>`
    - `PORT` (o Railway injeta automaticamente)
+   - Para o login/importação com Spotify: `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` (do app no developer.spotify.com) e `TOKEN_ENCRYPTION_KEY` (gere com `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`)
 5. Deploy. O serviço roda `node dist/migrate.js && node dist/index.js` automaticamente (cria as tabelas e sobe na porta certa).
 6. A URL pública fica em `Settings → Networking → Public Networking` (ex.: `https://albumrate-server.up.railway.app`).
 
@@ -46,6 +47,15 @@ Tudo sob `/api`. Rotas de reviews exigem `Authorization: Bearer <token>`.
 | `GET` | `/albums/:albumId/reviews` | Nota média, total e lista de resenhas do álbum (+ `myReview`) |
 | `GET` | `/me/reviews` | Avaliações do usuário logado, mais recentes primeiro |
 | `GET` | `/users/:id/diversity-score` | Índice de diversidade musical (entropia de Shannon normalizada 0–100) + distribuições por gênero, década e país do artista |
+| `POST` | `/auth/spotify/begin` | Inicia o login com Spotify → `{state}` (anti-CSRF, expira em 10 min) |
+| `POST` | `/auth/spotify/exchange` | Troca `{code, codeVerifier, redirectUri, state}` → `{token, user}` ou `{conflict, existingUser, pendingLinkToken}` |
+| `POST` | `/auth/spotify/link` | Finaliza conflito de conta `{pendingLinkToken, linkMode: link\|new}` → `{token, user}` |
+| `GET` | `/me/spotify/recently-played` | Últimos álbuns ouvidos no Spotify (faixas recentes agrupadas, máx 30) |
+| `GET` | `/me/spotify/top-artists` | Top artistas do Spotify (com gêneros) |
+| `POST` | `/me/spotify/import/recently-played` | Importa álbuns selecionados para o diário de escuta (dedup `album_id\|listened_at`) |
+| `POST` | `/me/spotify/import/saved-albums` | Importa a biblioteca salva para a lista "Importado do Spotify" (idempotente) |
+| `DELETE` | `/me/spotify/connection` | Desvincula o Spotify (limpa tokens) |
+| `PUT` | `/me/favorite-genres` | Salva gêneros favoritos `{genres: string[]}` (máx 10) → `{favoriteGenres}` |
 
 Payload do review:
 
@@ -92,3 +102,4 @@ O `diversity-score` calcula a entropia de Shannon sobre a distribuição de gên
 - O `JWT_SECRET` deve ser trocado no deploy.
 - **Rate limit** em `/api/auth` (cadastro/login): 20 requisições / 15 min / IP (`express-rate-limit`).
 - `app.set('trust proxy', 1)` — necessário para o rate limit pegar o IP real atrás de proxies (Railway/Render).
+- **Spotify:** o `SPOTIFY_CLIENT_SECRET` nunca vai pro app — a troca do `code` e o refresh acontecem no servidor. Tokens de acesso/refresh ficam **criptografados** no banco (AES-256-GCM) com `TOKEN_ENCRYPTION_KEY`; se a chave for perdida, usuários precisam reconectar. Token revogado/expirado devolve `{code: "spotify_reconnect_required"}` (app pede reconexão sem derrubar o login).

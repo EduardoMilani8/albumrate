@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons'
+import { FontAwesome5, Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { router, useFocusEffect } from 'expo-router'
 import { useCallback, useState } from 'react'
@@ -9,6 +9,7 @@ import { colors, radius, spacing } from '../constants/theme'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import type { DiversityScoreResponse, Review } from '../lib/types'
+import { useSpotifySignIn } from '../lib/useSpotifySignIn'
 
 function formatListenedAt(value: string): string {
   const [year, month, day] = value.split('-')
@@ -17,10 +18,12 @@ function formatListenedAt(value: string): string {
 }
 
 export default function ProfileScreen() {
-  const { user, signOut } = useAuth()
+  const { user, signOut, disconnectSpotify, refreshUser } = useAuth()
+  const { run: runSpotifySignIn } = useSpotifySignIn()
   const [reviews, setReviews] = useState<Review[]>([])
   const [diversity, setDiversity] = useState<DiversityScoreResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [spotifyLoading, setSpotifyLoading] = useState(false)
 
   useFocusEffect(
     useCallback(() => {
@@ -81,6 +84,35 @@ export default function ProfileScreen() {
     ])
   }
 
+  const handleSpotifyConnect = async () => {
+    setSpotifyLoading(true)
+    try {
+      const ok = await runSpotifySignIn()
+      if (ok) await refreshUser()
+    } catch (err) {
+      Alert.alert('Erro', err instanceof Error ? err.message : 'Não foi possível conectar.')
+    } finally {
+      setSpotifyLoading(false)
+    }
+  }
+
+  const handleSpotifyDisconnect = () => {
+    Alert.alert('Desconectar Spotify', 'Sua conta do Spotify será desvinculada deste perfil.', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Desconectar',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await disconnectSpotify()
+          } catch (err) {
+            Alert.alert('Erro', err instanceof Error ? err.message : 'Não foi possível desconectar.')
+          }
+        },
+      },
+    ])
+  }
+
   const average =
     reviews.length === 0
       ? null
@@ -90,10 +122,14 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.avatar}>
-          <Ionicons name="person" size={28} color={colors.text} />
+          {user?.avatarUrl ? (
+            <Image source={user.avatarUrl} style={styles.avatarImage} contentFit="cover" />
+          ) : (
+            <Ionicons name="person" size={28} color={colors.text} />
+          )}
         </View>
         <Text style={styles.name}>{user?.name ?? 'Sem nome'}</Text>
-        <Text style={styles.email}>{user?.email}</Text>
+        {user?.email ? <Text style={styles.email}>{user.email}</Text> : null}
 
         <View style={styles.stats}>
           <View style={styles.statItem}>
@@ -125,6 +161,58 @@ export default function ProfileScreen() {
                   countryDistribution={diversity.countryDistribution}
                 />
               ) : null}
+
+              {user && user.favoriteGenres.length > 0 ? (
+                <View style={styles.genresCard}>
+                  <Text style={styles.genresTitle}>Gêneros favoritos</Text>
+                  <View style={styles.genresChips}>
+                    {user.favoriteGenres.map((genre) => (
+                      <View key={genre} style={styles.genreChip}>
+                        <Text style={styles.genreChipText}>{genre}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+
+              <View style={styles.spotifyCard}>
+                <View style={styles.spotifyHeader}>
+                  <FontAwesome5 name="spotify" size={22} color={colors.spotify} />
+                  <View style={styles.spotifyInfo}>
+                    <Text style={styles.spotifyTitle}>Spotify</Text>
+                    <Text style={styles.spotifyStatus}>
+                      {user?.spotifyConnected ? 'Conectado' : 'Não conectado'}
+                    </Text>
+                  </View>
+                </View>
+                {user?.spotifyConnected ? (
+                  <View style={styles.spotifyActions}>
+                    <Pressable
+                      style={styles.spotifyAction}
+                      onPress={handleSpotifyConnect}
+                      disabled={spotifyLoading}
+                    >
+                      <Text style={styles.spotifyActionText}>
+                        {spotifyLoading ? 'Conectando…' : 'Reconectar'}
+                      </Text>
+                    </Pressable>
+                    <Pressable style={styles.spotifyAction} onPress={handleSpotifyDisconnect}>
+                      <Text style={styles.spotifyActionDanger}>Desconectar</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <Pressable
+                    style={styles.spotifyConnectButton}
+                    onPress={handleSpotifyConnect}
+                    disabled={spotifyLoading}
+                  >
+                    <FontAwesome5 name="spotify" size={18} color="#191414" />
+                    <Text style={styles.spotifyConnectText}>
+                      {spotifyLoading ? 'Conectando…' : 'Conectar Spotify'}
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
 
               <Pressable style={styles.diaryButton} onPress={() => router.push('/lists')}>
                 <Ionicons name="list-outline" size={18} color={colors.text} />
@@ -221,7 +309,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
     marginBottom: spacing.sm,
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
   name: {
     color: colors.text,
@@ -231,6 +324,100 @@ const styles = StyleSheet.create({
   email: {
     color: colors.textMuted,
     fontSize: 14,
+  },
+  genresCard: {
+    marginHorizontal: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.sm,
+  },
+  genresTitle: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  genresChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  genreChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 500,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  genreChipText: {
+    color: colors.text,
+    fontSize: 13,
+  },
+  spotifyCard: {
+    marginHorizontal: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.md,
+  },
+  spotifyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  spotifyInfo: {
+    flex: 1,
+  },
+  spotifyTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  spotifyStatus: {
+    color: colors.textMuted,
+    fontSize: 13,
+  },
+  spotifyActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  spotifyAction: {
+    flex: 1,
+    height: 40,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  spotifyActionText: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  spotifyActionDanger: {
+    color: colors.accent,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  spotifyConnectButton: {
+    height: 44,
+    borderRadius: 500,
+    backgroundColor: colors.spotify,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  spotifyConnectText: {
+    color: '#191414',
+    fontSize: 15,
+    fontWeight: '700',
   },
   stats: {
     flexDirection: 'row',

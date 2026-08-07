@@ -29,8 +29,12 @@ export interface GenreCount {
 
 export interface AuthUser {
   id: string
-  email: string
+  email: string | null
   name: string | null
+  avatarUrl: string | null
+  country: string | null
+  spotifyConnected: boolean
+  favoriteGenres: string[]
 }
 
 export type MediaType = 'vinil' | 'cd' | 'cassete' | 'digital'
@@ -47,7 +51,7 @@ export interface MediaReview {
 }
 
 export interface ReviewUser {
-  email: string
+  email: string | null
   name: string | null
 }
 
@@ -152,3 +156,28 @@ export interface DiversityScoreResponse {
   decadeDistribution: DiversityBucket[]
   countryDistribution: DiversityBucket[]
 }
+
+export interface SpotifyRecentAlbum {
+  albumId: string
+  title: string
+  artist: string
+  artworkUrl: string | null
+  releaseDate: string | null
+  lastPlayedAt: string
+}
+
+export interface SpotifyTopArtist {
+  id: string
+  name: string
+  genres: string[]
+  imageUrl: string | null
+}
+
+export interface SpotifyExistingUser {
+  name: string | null
+  email: string | null
+}
+
+export type SpotifyExchangeResult =
+  | { token: string; user: AuthUser }
+  | { conflict: true; existingUser: SpotifyExistingUser; pendingLinkToken: string }

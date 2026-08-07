@@ -3,8 +3,8 @@
 ## Project
 
 - **Albumrate** — Expo SDK 57 (React Native 0.86, React 19) + TypeScript (strict) + expo-router + expo-sqlite.
-- App de avaliação de álbuns: busca no Spotify, nota em estrelas (meio-ponto), resenha, data ouvida, perfil, persistência local em SQLite, tema dark. Inclui **avaliação opcional de mídia física** (vinil/CD/cassete/digital, qualidade da prensagem, condição), **diário de escuta** (`listening_logs`) para registrar releituras por data e **listas temáticas de álbuns** (públicas/privadas, com reordenação).
-- **Avaliações e usuários vivem num backend** (`server/`): Node/Express + Postgres (Drizzle) + JWT + bcrypt. O app autentica com e-mail/senha e busca reviews via API.
+- App de avaliação de álbuns: busca no Spotify, nota em estrelas (meio-ponto), resenha, data ouvida, perfil, persistência local em SQLite, tema dark. Inclui **avaliação opcional de mídia física** (vinil/CD/cassete/digital, qualidade da prensagem, condição), **diário de escuta** (`listening_logs`) para registrar releituras por data e **listas temáticas de álbuns** (públicas/privadas, com reordenação). Login por e-mail/senha **ou Spotify (OAuth 2.0 + PKCE)** com onboarding de importação (avatar/país, top artistas, **gêneros favoritos**, ouvidos recentes → diário, biblioteca salva → lista "Importado do Spotify").
+- **Avaliações e usuários vivem num backend** (`server/`): Node/Express + Postgres (Drizzle) + JWT + bcrypt. O app autentica com e-mail/senha ou Spotify e busca reviews via API.
 - **Backend em produção:** Railway (`albumrate-production.up.railway.app`) — ver "Deploy" abaixo.
 
 ## ⚠️ Banco de dados local — NUNCA tocar
@@ -42,17 +42,20 @@ Necessárias para o server (`server/.env`, ver `server/.env.example`):
 ```
 DATABASE_URL=postgres://...
 JWT_SECRET=...
+SPOTIFY_CLIENT_ID=...
+SPOTIFY_CLIENT_SECRET=...
+TOKEN_ENCRYPTION_KEY=...   # 64 hex chars; tokens do Spotify são criptografados com ela (AES-256-GCM)
 ```
 
 `.env` está no `.gitignore` — nunca commitar credenciais. O `.env` só é lido ao iniciar o Metro (`expo start`). `server/.env` também é ignorado.
 
 ## Structure
 
-- `app/` — rotas expo-router (`_layout.tsx`, `index.tsx`, `search.tsx`, `album/[id].tsx`, `diary.tsx`, `lists.tsx`, `list/[id].tsx`, `login.tsx`, `register.tsx`, `profile.tsx`)
+- `app/` — rotas expo-router (`_layout.tsx`, `index.tsx`, `search.tsx`, `album/[id].tsx`, `diary.tsx`, `lists.tsx`, `list/[id].tsx`, `login.tsx`, `register.tsx`, `spotify-onboarding.tsx`, `profile.tsx`)
 - `components/` — `AlbumCard`, `StarRating`, `ReviewModal`, `MediaReviewCard`, `ListFormModal`, `AddToListModal`, `DiversityChart` (donut de gêneros com react-native-svg)
 - `constants/` — `theme.ts` (colors/spacing/radius dark; usar sempre)
-- `lib/` — `db.ts` (SQLite local, só status `logged`/`want_to_listen`), `spotify.ts` (API), `metadata.ts` (enriquecimento de gênero/ano/país via API pública do Deezer), `types.ts`, `api.ts` (cliente HTTP do backend), `auth.tsx` (AuthContext + SecureStore)
-- `server/` — API Node/Express + Postgres (Drizzle): `src/schema.ts`, `src/routes/{auth,reviews,listeningLogs,lists,diversity}.ts`, `src/lib/dates.ts` (helpers de data), `src/lib/diversity.ts` (entropia de Shannon normalizada), `src/migrate.ts`, `drizzle/` (migrações geradas), `Dockerfile`, `.dockerignore`
+- `lib/` — `db.ts` (SQLite local, só status `logged`/`want_to_listen`), `spotify.ts` (API de busca), `spotifyAuth.ts` (OAuth PKCE manual: verifier S256, abre navegador), `useSpotifySignIn.ts` (hook do login Spotify + diálogo de conflito), `metadata.ts` (enriquecimento de gênero/ano/país via API pública do Deezer), `types.ts`, `api.ts` (cliente HTTP do backend), `auth.tsx` (AuthContext + SecureStore)
+- `server/` — API Node/Express + Postgres (Drizzle): `src/schema.ts`, `src/routes/{auth,spotifyAuth,reviews,listeningLogs,lists,diversity,spotify}.ts`, `src/lib/{dates,diversity,user,spotify}.ts` (spotify.ts server-side: criptografia AES-256-GCM + exchange/refresh/imports do Spotify), `src/migrate.ts`, `drizzle/` (migrações geradas), `Dockerfile`, `.dockerignore`
 - `metro.config.js` — `.wasm` como asset + headers COEP/COOP (expo-sqlite web)
 
 ## Conventions
@@ -62,6 +65,8 @@ JWT_SECRET=...
 - **Reviews/notas ficam no backend.** O SQLite local só guarda a lista "Meus Álbuns" com status (`logged`/`want_to_listen`). As colunas `rating`/`review` da tabela local são legadas.
 - **Metadata de álbum (gênero/ano/país) também fica no backend**: colunas `album_genre`/`album_year`/`album_country` em `reviews` e `listening_logs`. O app enriquece via Deezer (best-effort) na tela do álbum e envia junto ao salvar review/log. Endpoint de diversidade: `GET /api/users/:id/diversity-score` (entropia de Shannon normalizada 0–100 sobre a distribuição de gêneros; também devolve distribuições por gênero/década/país).
 - **Listas temáticas também vivem no backend** (`lists`/`list_albums` no Postgres). A capa da lista é calculada do primeiro álbum (não há coluna de capa). Reordenação usa botões subir/descer (sem lib de drag-and-drop).
+- **Login com Spotify:** OAuth Authorization Code + PKCE. `SPOTIFY_CLIENT_SECRET` **nunca** vai pro app — o server troca o `code`, guarda e faz refresh dos tokens. Tokens ficam **criptografados** (AES-256-GCM) no banco com `TOKEN_ENCRYPTION_KEY`. `users.email`/`password_hash` são opcionais (contas só do Spotify). Conflito de e-mail → diálogo Vincular/Criar conta nova via `pendingLinkToken`. Estado anti-CSRF (`state`) validado nas duas pontas (begin/exchange). Escopos: `user-read-email user-read-private user-top-read user-read-recently-played user-library-read user-follow-read`.
+- **Gêneros favoritos** (`users.favorite_genres`, `text[]`): salvos via `PUT /api/me/favorite-genres` (zod, máx 10) durante o onboarding (detectados dos top artistas, máx 5 na UI) e exibidos no perfil. Vêm em `user.favoriteGenres` no `toPublicUser`.
 - Rotas do app são protegidas com `Stack.Protected` em `app/_layout.tsx` (guarda de login). Token JWT no `expo-secure-store`.
 - Imports de caminho relativo (ex.: `../constants/theme`). O alias `@/*` existe no tsconfig.
 - Commits em português, estilo dos existentes.
@@ -84,6 +89,8 @@ JWT_SECRET=...
 - `server/` usa `noUncheckedIndexedAccess` — desestruturar de `.returning()`/arrays pode dar `undefined`; trate antes de usar.
 - **`server/.dockerignore` NÃO pode excluir `drizzle/`**: o `migrate.ts` lê essa pasta em runtime (`node dist/migrate.js` no boot do container). Já houve bug disso antes.
 - **Rate limit** no `server`: `express-rate-limit` aplicado em `/api/auth` (20 req / 15 min / IP) e `app.set('trust proxy', 1)` para pegar o IP real atrás do Railway. Não remova.
+- **Ordem dos mounts no `server/src/index.ts`:** `/api/auth/spotify` deve vir **antes** de `/api/auth` — se inverter, a requisição ao `begin` cai no `authenticate` e devolve `Token não fornecido.` (já houve bug disso durante o desenvolvimento).
+- **Redirect URI do Spotify:** o app loga a URI exata usada (`[spotify] redirect URI usada pelo app: ...` no terminal do `expo start`). Em Expo Go é um `exp://...` (não é o mesmo endereço que aparece nas configurações do Expo Go); no APK final, `albumrate://`.
 - **bcrypt limita a 72 bytes** — senhas com mais de 72 caracteres são rejeitadas no zod (max 72).
 - `listenedAt` no backend é validado como data real e **não futura** (senão o Postgres rejeita com 500).
 - `app/lib/auth.tsx`: token só é apagado em **401**; erro de rede mantém o token (para o usuário não ser deslogado à toa).
@@ -92,7 +99,7 @@ JWT_SECRET=...
 ## Deploy (Railway)
 
 - Serviço `albumrate-production` → Root Directory `server`, Dockerfile na raiz do serviço.
-- Variáveis no serviço: `DATABASE_URL` (Postgres do mesmo projeto) e `JWT_SECRET`. `PORT` é injetado pelo Railway (fallback 8080).
+- Variáveis no serviço: `DATABASE_URL` (Postgres do mesmo projeto), `JWT_SECRET`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` e `TOKEN_ENCRYPTION_KEY` (64 hex; não perder — sem ela os tokens salvos não são descriptografados). `PORT` é injetado pelo Railway (fallback 8080).
 - Deploy automático a cada push no `master`. Boot roda `node dist/migrate.js && node dist/index.js` (aplica migrações e sobe).
 - **Plano free do Railway:** trial de 30 dias (US$ 5); depois vira plano Free (US$ 1/mês de crédito). Server + Postgres 24/7 passa de US$ 1 → deploy pausa (não apaga) até o reset mensal. Opções quando vencer: Hobby (US$ 5/mês) ou migrar Postgres para Supabase/Neon (free) e server para Render free.
 
