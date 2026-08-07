@@ -26,6 +26,9 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true)
   const [spotifyLoading, setSpotifyLoading] = useState(false)
   const [countryBackfillPending, setCountryBackfillPending] = useState(false)
+  const [followCounts, setFollowCounts] = useState<{ followers: number; following: number } | null>(
+    null,
+  )
   const backfillRunningRef = useRef(false)
 
   useFocusEffect(
@@ -40,6 +43,14 @@ export default function ProfileScreen() {
           if (active) setLoading(false)
         })
       if (user?.id) {
+        void (async () => {
+          try {
+            const profile = await api.getUserProfile(user.id)
+            if (active) setFollowCounts(profile.user.counts)
+          } catch (err) {
+            console.warn(err)
+          }
+        })()
         void (async () => {
           try {
             const data = await api.diversityScore(user.id)
@@ -164,6 +175,16 @@ export default function ProfileScreen() {
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{average !== null ? average.toFixed(1) : '—'}</Text>
             <Text style={styles.statLabel}>Sua média</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{followCounts?.followers ?? '—'}</Text>
+            <Text style={styles.statLabel}>Seguidores</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{followCounts?.following ?? '—'}</Text>
+            <Text style={styles.statLabel}>Seguindo</Text>
           </View>
         </View>
       </View>
