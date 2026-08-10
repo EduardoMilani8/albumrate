@@ -1,8 +1,11 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
+import { useMemo } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
-import { colors, radius, spacing } from '../constants/theme'
+import { radius, spacing } from '../constants/theme'
+import type { ThemeTokens } from '../constants/themes'
 import type { DailyPick } from '../lib/types'
+import { useTheme } from '../lib/theme'
 
 interface DailyPickCardProps {
   pick: DailyPick | null
@@ -19,6 +22,8 @@ export default function DailyPickCard({
   onPick,
   onOpenAlbum,
 }: DailyPickCardProps) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -76,7 +81,8 @@ export default function DailyPickCard({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
   card: {
     marginHorizontal: spacing.md,
     marginTop: spacing.md,

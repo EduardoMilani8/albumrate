@@ -2,13 +2,15 @@ import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useSQLiteContext } from 'expo-sqlite'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import ReviewModal from '../../components/ReviewModal'
 import MediaReviewCard from '../../components/MediaReviewCard'
 import AddToListModal from '../../components/AddToListModal'
 import StarRating from '../../components/StarRating'
-import { colors, radius, spacing } from '../../constants/theme'
+import { radius, spacing } from '../../constants/theme'
+import type { ThemeTokens } from '../../constants/themes'
+import { useTheme } from '../../lib/theme'
 import { api } from '../../lib/api'
 import { deleteAlbum, getAlbumById, upsertAlbum } from '../../lib/db'
 import { enrichAlbumMetadata } from '../../lib/metadata'
@@ -35,6 +37,8 @@ export default function AlbumDetailScreen() {
     fromSearch?: string
   }>()
   const db = useSQLiteContext()
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
 
   const [album, setAlbum] = useState<LoggedAlbum | null>(null)
   const [reviewsData, setReviewsData] = useState<AlbumReviewsResponse | null>(null)
@@ -373,11 +377,12 @@ export default function AlbumDetailScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
   content: {
     alignItems: 'center',
     padding: spacing.lg,

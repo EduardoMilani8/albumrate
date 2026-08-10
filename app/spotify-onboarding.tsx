@@ -10,7 +10,9 @@ import {
   Text,
   View,
 } from 'react-native'
-import { colors, radius, spacing } from '../constants/theme'
+import { radius, spacing } from '../constants/theme'
+import type { ThemeTokens } from '../constants/themes'
+import { useTheme } from '../lib/theme'
 import { api, ApiError } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import type { SpotifyRecentAlbum, SpotifyTopArtist } from '../lib/types'
@@ -25,6 +27,8 @@ function formatDate(value: string): string {
 export default function SpotifyOnboardingScreen() {
   const { user, refreshUser } = useAuth()
   const { run: runSpotifySignIn } = useSpotifySignIn()
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [step, setStep] = useState(0)
   const [finished, setFinished] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -210,10 +214,10 @@ export default function SpotifyOnboardingScreen() {
             disabled={reconnecting}
           >
             {reconnecting ? (
-              <ActivityIndicator color="#191414" />
+              <ActivityIndicator color={colors.onSpotify} />
             ) : (
               <>
-                <FontAwesome5 name="spotify" size={20} color="#191414" />
+                <FontAwesome5 name="spotify" size={20} color={colors.onSpotify} />
                 <Text style={styles.spotifyButtonText}>Reconectar Spotify</Text>
               </>
             )}
@@ -388,11 +392,12 @@ export default function SpotifyOnboardingScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
   dots: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -481,7 +486,7 @@ const styles = StyleSheet.create({
     borderColor: colors.spotify,
   },
   genreChipTextActive: {
-    color: '#191414',
+    color: colors.onSpotify,
   },
   chipText: {
     color: colors.text,
@@ -575,7 +580,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   spotifyButtonText: {
-    color: '#191414',
+    color: colors.onSpotify,
     fontSize: 16,
     fontWeight: '700',
   },

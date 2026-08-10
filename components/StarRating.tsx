@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Pressable, View } from 'react-native'
-import { colors } from '../constants/theme'
+import { useTheme } from '../lib/theme'
 
 interface StarRatingProps {
   rating: number | null
@@ -15,6 +15,7 @@ export default function StarRating({
   size = 32,
   readOnly = false,
 }: StarRatingProps) {
+  const { colors } = useTheme()
   const handlePress = (index: number, locationX: number) => {
     if (readOnly || !onChange) return
     const half = locationX < size / 2

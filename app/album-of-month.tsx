@@ -15,7 +15,9 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { colors, radius, spacing } from '../constants/theme'
+import { radius, spacing } from '../constants/theme'
+import type { ThemeTokens } from '../constants/themes'
+import { useTheme } from '../lib/theme'
 import { api } from '../lib/api'
 import type {
   AlbumOfMonth,
@@ -63,6 +65,8 @@ function formatRating(value: number | null): string {
 export default function AlbumOfMonthScreen() {
   const params = useLocalSearchParams<{ id?: string }>()
   const pickId = params.id
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
 
   const [pick, setPick] = useState<AlbumOfMonth | null>(null)
   const [top3, setTop3] = useState<AlbumOfMonthCandidate[]>([])
@@ -578,11 +582,12 @@ export default function AlbumOfMonthScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
   center: {
     flex: 1,
     alignItems: 'center',
@@ -1005,7 +1010,7 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: colors.scrim,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.lg,

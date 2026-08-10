@@ -3,7 +3,7 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker'
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Modal,
@@ -14,10 +14,12 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { colors, radius, spacing } from '../constants/theme'
+import { radius, spacing } from '../constants/theme'
+import type { ThemeTokens } from '../constants/themes'
 import { api } from '../lib/api'
 import { searchAlbums } from '../lib/spotify'
 import type { CollectionItem, MediaCondition, MediaType, SpotifyAlbumResult } from '../lib/types'
+import { useTheme } from '../lib/theme'
 
 const MEDIA_OPTIONS = [
   { value: 'vinil', label: 'Vinil' },
@@ -59,6 +61,8 @@ export default function CollectionFormModal({
   onClose,
   onSaved,
 }: CollectionFormModalProps) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const editing = item !== null && item !== undefined
   const [album, setAlbum] = useState<SpotifyAlbumResult | null>(null)
   const [query, setQuery] = useState('')
@@ -352,10 +356,11 @@ export default function CollectionFormModal({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: colors.scrim,
     justifyContent: 'flex-end',
   },
   sheet: {

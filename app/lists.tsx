@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { router, useFocusEffect, useNavigation } from 'expo-router'
-import { useCallback, useLayoutEffect, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -11,11 +11,15 @@ import {
   View,
 } from 'react-native'
 import ListFormModal from '../components/ListFormModal'
-import { colors, radius, spacing } from '../constants/theme'
+import { radius, spacing } from '../constants/theme'
+import type { ThemeTokens } from '../constants/themes'
 import { api } from '../lib/api'
+import { useTheme } from '../lib/theme'
 import type { AlbumListSummary } from '../lib/types'
 
 export default function ListsScreen() {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const navigation = useNavigation()
   const [lists, setLists] = useState<AlbumListSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -120,7 +124,8 @@ export default function ListsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

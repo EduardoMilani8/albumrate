@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { router, useFocusEffect } from 'expo-router'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
-import { colors, radius, spacing } from '../constants/theme'
+import { radius, spacing } from '../constants/theme'
+import type { ThemeTokens } from '../constants/themes'
+import { useTheme } from '../lib/theme'
 import { api } from '../lib/api'
 import type { AlbumOfMonthHistoryItem } from '../lib/types'
 
@@ -15,6 +17,8 @@ function formatMonthYear(month: number, year: number): string {
 }
 
 export default function AlbumOfMonthHistoryScreen() {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [items, setItems] = useState<AlbumOfMonthHistoryItem[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -146,11 +150,12 @@ export default function AlbumOfMonthHistoryScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
   center: {
     flex: 1,
     backgroundColor: colors.background,

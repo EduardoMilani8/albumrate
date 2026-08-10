@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   Modal,
@@ -9,9 +9,11 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { colors, radius, spacing } from '../constants/theme'
+import { radius, spacing } from '../constants/theme'
+import type { ThemeTokens } from '../constants/themes'
 import { api } from '../lib/api'
 import type { AlbumListSummary } from '../lib/types'
+import { useTheme } from '../lib/theme'
 
 interface ListFormModalProps {
   visible: boolean
@@ -26,6 +28,8 @@ export default function ListFormModal({
   onClose,
   onSaved,
 }: ListFormModalProps) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const editing = list !== null && list !== undefined
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -140,10 +144,11 @@ export default function ListFormModal({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: colors.scrim,
     justifyContent: 'flex-end',
   },
   sheet: {

@@ -2,7 +2,7 @@ import DateTimePicker, {
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker'
 import { Ionicons } from '@expo/vector-icons'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -14,8 +14,10 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { colors, radius, spacing } from '../constants/theme'
+import { radius, spacing } from '../constants/theme'
+import type { ThemeTokens } from '../constants/themes'
 import { api } from '../lib/api'
+import { useTheme } from '../lib/theme'
 import type { MediaCondition, MediaType, Review } from '../lib/types'
 import StarRating from './StarRating'
 
@@ -75,6 +77,8 @@ export default function ReviewModal({
   onSaved,
   onDeleted,
 }: ReviewModalProps) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [rating, setRating] = useState<number | null>(null)
   const [reviewText, setReviewText] = useState('')
   const [listenedAt, setListenedAt] = useState<Date>(new Date())
@@ -326,12 +330,13 @@ export default function ReviewModal({
   )
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
-  },
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: colors.scrim,
+      justifyContent: 'flex-end',
+    },
   sheet: {
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.lg,

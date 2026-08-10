@@ -1,6 +1,9 @@
+import { useMemo } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import Svg, { Circle } from 'react-native-svg'
-import { colors, spacing } from '../constants/theme'
+import { spacing } from '../constants/theme'
+import type { ThemeTokens } from '../constants/themes'
+import { useTheme } from '../lib/theme'
 import type { DiversityBucket } from '../lib/types'
 
 const PALETTE = [
@@ -91,6 +94,8 @@ export default function DiversityChart({
   decadeDistribution,
   countryDistribution,
 }: DiversityChartProps) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const slices = summarize(genreDistribution)
 
   return (
@@ -168,8 +173,9 @@ export default function DiversityChart({
   )
 }
 
-const styles = StyleSheet.create({
-  card: {
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
+    card: {
     alignItems: 'center',
     gap: spacing.md,
     marginHorizontal: spacing.md,

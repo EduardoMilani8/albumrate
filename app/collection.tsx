@@ -13,8 +13,10 @@ import {
   View,
 } from 'react-native'
 import CollectionFormModal from '../components/CollectionFormModal'
-import { colors, radius, spacing } from '../constants/theme'
+import { radius, spacing } from '../constants/theme'
+import type { ThemeTokens } from '../constants/themes'
 import { api } from '../lib/api'
+import { useTheme } from '../lib/theme'
 import type { CollectionItem, MediaType, PublicCollectionItem } from '../lib/types'
 
 const MEDIA_FILTERS: { value: MediaType | null; label: string }[] = [
@@ -45,6 +47,8 @@ function formatDate(value: string): string {
 }
 
 export default function CollectionScreen() {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const params = useLocalSearchParams<{ userId?: string }>()
   const userId = params.userId
   const isOwn = !userId
@@ -311,7 +315,8 @@ export default function CollectionScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -456,7 +461,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOpacity: 0.3,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },

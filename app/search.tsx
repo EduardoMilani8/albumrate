@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { router, useLocalSearchParams, useNavigation } from 'expo-router'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -12,14 +12,18 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { colors, radius, spacing } from '../constants/theme'
+import { radius, spacing } from '../constants/theme'
+import type { ThemeTokens } from '../constants/themes'
 import { api } from '../lib/api'
 import { searchAlbums } from '../lib/spotify'
+import { useTheme } from '../lib/theme'
 import type { SpotifyAlbumResult, UserSearchResult } from '../lib/types'
 
 type SearchTab = 'albums' | 'users'
 
 export default function SearchScreen() {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const params = useLocalSearchParams<{ listId?: string }>()
   const listId = params.listId
   const navigation = useNavigation()
@@ -299,7 +303,8 @@ export default function SearchScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

@@ -1,6 +1,6 @@
 import { FontAwesome5, Ionicons } from '@expo/vector-icons'
 import { Link, router } from 'expo-router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -11,13 +11,17 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { colors, radius, spacing } from '../constants/theme'
+import { radius, spacing } from '../constants/theme'
+import type { ThemeTokens } from '../constants/themes'
+import { useTheme } from '../lib/theme'
 import { useAuth } from '../lib/auth'
 import { useSpotifySignIn } from '../lib/useSpotifySignIn'
 
 export default function RegisterScreen() {
   const { signUp } = useAuth()
   const { run: runSpotifySignIn } = useSpotifySignIn()
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -73,7 +77,7 @@ export default function RegisterScreen() {
             <ActivityIndicator color={colors.spotify} />
           ) : (
             <>
-              <FontAwesome5 name="spotify" size={20} color="#191414" />
+              <FontAwesome5 name="spotify" size={20} color={colors.onSpotify} />
               <Text style={styles.spotifyButtonText}>Criar conta com Spotify</Text>
             </>
           )}
@@ -130,11 +134,12 @@ export default function RegisterScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
   content: {
     flex: 1,
     alignItems: 'center',
@@ -159,7 +164,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   spotifyButtonText: {
-    color: '#191414',
+    color: colors.onSpotify,
     fontSize: 16,
     fontWeight: '700',
   },

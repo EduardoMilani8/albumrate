@@ -1,8 +1,11 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
+import { useMemo } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { colors, radius, spacing } from '../constants/theme'
+import { radius, spacing } from '../constants/theme'
+import type { ThemeTokens } from '../constants/themes'
 import type { LoggedAlbum } from '../lib/types'
+import { useTheme } from '../lib/theme'
 
 interface AlbumCardProps {
   album: LoggedAlbum
@@ -11,6 +14,8 @@ interface AlbumCardProps {
 }
 
 export default function AlbumCard({ album, rating, onPress }: AlbumCardProps) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const year = album.releaseDate
     ? new Date(album.releaseDate).getFullYear().toString()
     : null
@@ -46,7 +51,8 @@ export default function AlbumCard({ album, rating, onPress }: AlbumCardProps) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',

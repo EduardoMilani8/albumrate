@@ -1,7 +1,10 @@
 import { Ionicons } from '@expo/vector-icons'
+import { useMemo } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
-import { colors, radius, spacing } from '../constants/theme'
+import { radius, spacing } from '../constants/theme'
+import type { ThemeTokens } from '../constants/themes'
 import type { MediaCondition, MediaReview, MediaType } from '../lib/types'
+import { useTheme } from '../lib/theme'
 import StarRating from './StarRating'
 
 const MEDIA_LABELS: Record<MediaType, string> = {
@@ -22,6 +25,8 @@ interface MediaReviewCardProps {
 }
 
 export default function MediaReviewCard({ mediaReview }: MediaReviewCardProps) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -47,7 +52,8 @@ export default function MediaReviewCard({ mediaReview }: MediaReviewCardProps) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
   card: {
     gap: spacing.xs,
     padding: spacing.sm,

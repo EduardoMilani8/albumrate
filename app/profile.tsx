@@ -1,14 +1,16 @@
 import { FontAwesome5, Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { router, useFocusEffect } from 'expo-router'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import StarRating from '../components/StarRating'
 import DiversityChart from '../components/DiversityChart'
 import WorldMap from '../components/WorldMap'
-import { colors, radius, spacing } from '../constants/theme'
+import { radius, spacing } from '../constants/theme'
+import type { ThemeTokens } from '../constants/themes'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
+import { useTheme } from '../lib/theme'
 import type { DiversityScoreResponse, Review } from '../lib/types'
 import { useSpotifySignIn } from '../lib/useSpotifySignIn'
 
@@ -19,6 +21,8 @@ function formatListenedAt(value: string): string {
 }
 
 export default function ProfileScreen() {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const { user, signOut, disconnectSpotify, refreshUser } = useAuth()
   const { run: runSpotifySignIn } = useSpotifySignIn()
   const [reviews, setReviews] = useState<Review[]>([])
@@ -261,7 +265,7 @@ export default function ProfileScreen() {
                     onPress={handleSpotifyConnect}
                     disabled={spotifyLoading}
                   >
-                    <FontAwesome5 name="spotify" size={18} color="#191414" />
+                    <FontAwesome5 name="spotify" size={18} color={colors.onSpotify} />
                     <Text style={styles.spotifyConnectText}>
                       {spotifyLoading ? 'Conectando…' : 'Conectar Spotify'}
                     </Text>
@@ -361,7 +365,8 @@ export default function ProfileScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -485,7 +490,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   spotifyConnectText: {
-    color: '#191414',
+    color: colors.onSpotify,
     fontSize: 15,
     fontWeight: '700',
   },

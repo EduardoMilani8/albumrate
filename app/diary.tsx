@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { router, useFocusEffect } from 'expo-router'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -11,8 +11,10 @@ import {
   Text,
   View,
 } from 'react-native'
-import { colors, radius, spacing } from '../constants/theme'
+import { radius, spacing } from '../constants/theme'
+import type { ThemeTokens } from '../constants/themes'
 import { api } from '../lib/api'
+import { useTheme } from '../lib/theme'
 import type { ListeningLog, ListeningLogMonth } from '../lib/types'
 
 function formatListenedAt(value: string): string {
@@ -32,6 +34,8 @@ function formatMonth(yearMonth: string): string {
 }
 
 export default function DiaryScreen() {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [months, setMonths] = useState<ListeningLogMonth[]>([])
   const [nextBefore, setNextBefore] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -185,7 +189,8 @@ export default function DiaryScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

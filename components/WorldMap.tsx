@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Platform, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native'
 import Svg, { G, Path } from 'react-native-svg'
-import { colors, radius, spacing } from '../constants/theme'
+import { radius, spacing } from '../constants/theme'
+import type { ThemeTokens } from '../constants/themes'
+import { useTheme } from '../lib/theme'
 import { WORLD_MAP } from '../lib/worldMapData'
 import type { DiversityBucket } from '../lib/types'
 
@@ -36,6 +38,8 @@ interface WorldMapProps {
 }
 
 export default function WorldMap({ distribution, pending = false }: WorldMapProps) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [width, setWidth] = useState(0)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
@@ -157,8 +161,9 @@ export default function WorldMap({ distribution, pending = false }: WorldMapProp
   )
 }
 
-const styles = StyleSheet.create({
-  card: {
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
+    card: {
     marginHorizontal: spacing.md,
     marginBottom: spacing.md,
     padding: spacing.md,

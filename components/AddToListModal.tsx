@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -11,9 +11,11 @@ import {
   Text,
   View,
 } from 'react-native'
-import { colors, radius, spacing } from '../constants/theme'
+import { radius, spacing } from '../constants/theme'
+import type { ThemeTokens } from '../constants/themes'
 import { api } from '../lib/api'
 import type { AlbumListSummary } from '../lib/types'
+import { useTheme } from '../lib/theme'
 import ListFormModal from './ListFormModal'
 
 interface AddToListAlbum {
@@ -30,6 +32,8 @@ interface AddToListModalProps {
 }
 
 export default function AddToListModal({ visible, album, onClose }: AddToListModalProps) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [lists, setLists] = useState<AlbumListSummary[]>([])
   const [loading, setLoading] = useState(false)
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set())
@@ -170,10 +174,11 @@ export default function AddToListModal({ visible, album, onClose }: AddToListMod
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: colors.scrim,
     justifyContent: 'flex-end',
   },
   sheet: {

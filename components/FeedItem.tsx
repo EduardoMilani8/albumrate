@@ -1,9 +1,12 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
+import { useMemo } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { colors, radius, spacing } from '../constants/theme'
+import { radius, spacing } from '../constants/theme'
+import type { ThemeTokens } from '../constants/themes'
 import type { FeedItem } from '../lib/types'
+import { useTheme } from '../lib/theme'
 import StarRating from './StarRating'
 
 function formatRelative(iso: string): string {
@@ -20,6 +23,8 @@ function formatRelative(iso: string): string {
 }
 
 export default function FeedItem({ item }: { item: FeedItem }) {
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const { user } = item
 
   const open = () => {
@@ -102,7 +107,8 @@ export default function FeedItem({ item }: { item: FeedItem }) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
   card: {
     flexDirection: 'row',
     gap: spacing.sm,

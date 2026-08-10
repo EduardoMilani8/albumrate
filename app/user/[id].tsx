@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import StarRating from '../../components/StarRating'
-import { colors, radius, spacing } from '../../constants/theme'
+import { radius, spacing } from '../../constants/theme'
+import type { ThemeTokens } from '../../constants/themes'
+import { useTheme } from '../../lib/theme'
 import { api } from '../../lib/api'
 import type { Review, UserProfile } from '../../lib/types'
 
@@ -16,6 +18,8 @@ function formatListenedAt(value: string): string {
 
 export default function UserProfileScreen() {
   const params = useLocalSearchParams<{ id: string }>()
+  const { colors } = useTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
@@ -249,11 +253,12 @@ export default function UserProfileScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+const createStyles = (colors: ThemeTokens) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
   center: {
     flex: 1,
     alignItems: 'center',
