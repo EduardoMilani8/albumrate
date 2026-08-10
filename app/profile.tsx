@@ -289,6 +289,12 @@ export default function ProfileScreen() {
                 <Text style={styles.diaryButtonText}>Meu diário</Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
               </Pressable>
+
+              <Pressable style={styles.diaryButton} onPress={() => router.push('/appearance')}>
+                <Ionicons name="color-palette-outline" size={18} color={colors.text} />
+                <Text style={styles.diaryButtonText}>Aparência</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              </Pressable>
             </View>
           }
           renderItem={({ item }) => (

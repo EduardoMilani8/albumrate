@@ -13,6 +13,7 @@ import dailyPickRouter from './routes/dailyPick.js'
 import diversityRouter from './routes/diversity.js'
 import listeningLogsRouter from './routes/listeningLogs.js'
 import listsRouter from './routes/lists.js'
+import preferencesRouter from './routes/preferences.js'
 import reviewsRouter from './routes/reviews.js'
 import socialRouter from './routes/social.js'
 import spotifyRouter from './routes/spotify.js'
@@ -97,6 +98,7 @@ app.use('/api', albumOfMonthRouter)
 app.use('/api', countriesRouter)
 app.use('/api', socialRouter)
 app.use('/api', collectionRouter)
+app.use('/api', preferencesRouter)
 app.use('/api/me/spotify', spotifyImportLimiter)
 app.use('/api', spotifyRouter)
 

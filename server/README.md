@@ -59,6 +59,7 @@ Tudo sob `/api`. Rotas de reviews exigem `Authorization: Bearer <token>`.
 | `POST` | `/me/spotify/import/saved-albums` | Importa a biblioteca salva para a lista "Importado do Spotify" (idempotente) |
 | `DELETE` | `/me/spotify/connection` | Desvincula o Spotify (limpa tokens) |
 | `PUT` | `/me/favorite-genres` | Salva gêneros favoritos `{genres: string[]}` (máx 10) → `{favoriteGenres}` |
+| `PUT` | `/me/theme-preference` | Salva a preferência de tema `{themeId: light\|dark\|midnight\|sepia\|neon}` → `{themePreference}` |
 
 Payload do review:
 

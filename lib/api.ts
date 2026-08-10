@@ -179,6 +179,13 @@ export const api = {
     })
   },
 
+  updateThemePreference(themeId: string) {
+    return request<{ themePreference: string }>('/api/me/theme-preference', {
+      method: 'PUT',
+      body: { themeId },
+    })
+  },
+
   getAlbumReviews(albumId: string) {
     return request<AlbumReviewsResponse>(`/api/albums/${albumId}/reviews`)
   },

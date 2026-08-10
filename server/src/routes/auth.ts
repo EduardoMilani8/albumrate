@@ -53,6 +53,7 @@ router.post('/register', async (req, res) => {
       email: users.email,
       name: users.name,
       favoriteGenres: users.favoriteGenres,
+      themePreference: users.themePreference,
       isAdmin: users.isAdmin,
     })
 
@@ -101,6 +102,7 @@ router.get('/me', authenticate, async (req: AuthedRequest, res) => {
       country: true,
       spotifyId: true,
       favoriteGenres: true,
+      themePreference: true,
       isAdmin: true,
     },
   })

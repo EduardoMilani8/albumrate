@@ -26,6 +26,7 @@ export const users = pgTable('users', {
   spotifyTokenExpiresAt: timestamp('spotify_token_expires_at', { withTimezone: true }),
   spotifyConnectedAt: timestamp('spotify_connected_at', { withTimezone: true }),
   favoriteGenres: text('favorite_genres').array(),
+  themePreference: text('theme_preference'),
   isAdmin: boolean('is_admin').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),

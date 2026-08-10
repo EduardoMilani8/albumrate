@@ -4,16 +4,19 @@ import { SQLiteProvider } from 'expo-sqlite'
 import { StatusBar } from 'expo-status-bar'
 import { ActivityIndicator, Pressable, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
-import { colors, spacing } from '../constants/theme'
+import { spacing } from '../constants/theme'
 import { AuthProvider, useAuth } from '../lib/auth'
 import { initDb } from '../lib/db'
+import { ThemeProvider, useTheme } from '../lib/theme'
 
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SQLiteProvider databaseName="albumrate.db" onInit={initDb}>
         <AuthProvider>
-          <RootNavigator />
+          <ThemeProvider>
+            <RootNavigator />
+          </ThemeProvider>
         </AuthProvider>
       </SQLiteProvider>
     </GestureHandlerRootView>
@@ -22,6 +25,7 @@ export default function RootLayout() {
 
 function RootNavigator() {
   const { user, initializing } = useAuth()
+  const { colors, isDark } = useTheme()
 
   if (initializing) {
     return (
@@ -40,7 +44,7 @@ function RootNavigator() {
 
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: colors.background },
@@ -80,6 +84,7 @@ function RootNavigator() {
             options={{ title: 'Histórico do Álbum do Mês' }}
           />
           <Stack.Screen name="profile" options={{ title: 'Perfil' }} />
+          <Stack.Screen name="appearance" options={{ title: 'Aparência' }} />
           <Stack.Screen name="user/[id]" options={{ title: '' }} />
           <Stack.Screen name="spotify-onboarding" options={{ headerShown: false }} />
         </Stack.Protected>

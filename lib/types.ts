@@ -35,6 +35,7 @@ export interface AuthUser {
   country: string | null
   spotifyConnected: boolean
   favoriteGenres: string[]
+  themePreference: string | null
   isAdmin: boolean
 }
 

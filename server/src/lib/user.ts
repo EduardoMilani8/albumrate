@@ -6,6 +6,7 @@ export interface PublicUserInput {
   country: string | null
   spotifyId: string | null
   favoriteGenres: string[] | null
+  themePreference: string | null
   isAdmin: boolean
 }
 
@@ -18,6 +19,7 @@ export function toPublicUser(user: PublicUserInput) {
     country: user.country,
     spotifyConnected: user.spotifyId !== null,
     favoriteGenres: user.favoriteGenres ?? [],
+    themePreference: user.themePreference ?? null,
     isAdmin: user.isAdmin,
   }
 }

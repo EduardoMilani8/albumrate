@@ -2,7 +2,7 @@
 
 Aplicativo para registrar, avaliar e acompanhar álbuns. Busca de álbuns via API do Spotify, avaliação em estrelas (com meio-ponto), resenha, data em que ouviu, **avaliação opcional de mídia física** (qualidade da prensagem, condição), **coleção física** (inventário separado das reviews), **diário de escuta** e perfil. Conta com **backend próprio** para usuários e avaliações e **login com Spotify** (OAuth 2.0 + PKCE) com importação opcional de dados.
 
-Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, em tema dark, + **Node/Express + Postgres (Drizzle)** no `server/`.
+Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, em tema escuro padrão com **5 temas selecionáveis** (Claro, Escuro, Midnight, Vinil Sépia e Contraste Neon), + **Node/Express + Postgres (Drizzle)** no `server/`.
 
 ## Funcionalidades
 
@@ -26,6 +26,7 @@ Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, em tema dark
 - **Álbum do mês**: todo mês um álbum em destaque escolhido pela **votação comunitária**. Nos últimos 7 dias do mês cada usuário vota em 3 álbuns (voto imutável); os candidatos são os 10 álbuns mais avaliados no mês. O mais votado é divulgado no dia 1 às 8h e ganha tela dedicada com botão "Ver álbum", **discussão em comentários** e **histórico navegável** com o pódio de cada mês
 - Estatísticas na home: total de álbuns avaliados e sua nota média
 - **Social**: seguir/deixar de seguir usuários (botão no perfil público), contadores de seguidores/seguindo, busca de pessoas na tela de busca e **feed de atividade na home** com o que quem você segue está fazendo (reviews novas, álbuns marcados no diário e listas criadas). Cada item leva à tela correspondente; listas privadas nunca aparecem no feed
+- **Aparência**: 5 temas predefinidos (Claro, Escuro, Midnight, Vinil Sépia e Contraste Neon) com grid de previews em miniatura (fundo/superfície/texto/acento). O toque aplica o tema na hora e a escolha fica salva localmente (aplicada antes de a API responder) e no perfil (`theme_preference`) para sincronizar entre dispositivos
 
 ## Stack
 
@@ -120,6 +121,7 @@ albumrate/
 │   ├── register.tsx        # cadastro (e-mail/senha ou botão Spotify)
 │   ├── spotify-onboarding.tsx # wizard de importação após conectar o Spotify
 │   ├── profile.tsx         # perfil: avaliações, avatar, gêneros favoritos, conexão Spotify, logout
+│   ├── appearance.tsx      # Aparência: grid de 5 temas com preview em miniatura (toque aplica na hora)
 │   └── user/[id].tsx       # perfil público: dados, seguidores/seguindo, botão Seguir, avaliações
 ├── components/
 │   ├── AlbumCard.tsx       # card de álbum nas listas
@@ -133,10 +135,14 @@ albumrate/
 │   ├── FeedItem.tsx        # item do feed de atividade (review, escuta ou lista)
 │   ├── DiversityChart.tsx  # donut de diversidade (react-native-svg) + legenda
 │   ├── WorldMap.tsx        # mapa-múndi de origens dos artistas (react-native-svg)
-├── constants/theme.ts      # tema dark: colors, spacing, radius
+├── constants/
+│   ├── theme.ts            # tokens do tema padrão (dark): colors, spacing, radius
+│   ├── themes.ts           # 5 temas predefinidos (Claro/Escuro/Midnight/Sépia/Neon) com todos os tokens de cor
 ├── lib/
 │   ├── api.ts              # cliente HTTP do backend
 │   ├── auth.tsx            # AuthContext + expo-secure-store (e-mail e Spotify)
+│   ├── theme.tsx           # ThemeProvider/useTheme: aplica o tema e sincroniza com o banco
+│   ├── storage.ts          # persistência local de preferências (SecureStore nativo / localStorage web)
 │   ├── db.ts               # SQLite local (status da lista)
 │   ├── metadata.ts         # enriquecimento Deezer (gênero/ano/país, best-effort)
 │   ├── spotify.ts          # busca de álbuns via proxy do backend (/api/spotify/search)
@@ -150,6 +156,7 @@ albumrate/
 ## Notas
 
 - **Web:** o suporte web do `expo-sqlite` é **alpha**. No Chrome o OPFS pode falhar ao abrir o banco (bug conhecido, tela branca). O alvo de teste é o celular (Expo Go).
+- **Temas:** os 5 temas vivem em `constants/themes.ts` (tokens `background`/`surface`/`surfaceAlt`/`border`/`text`/`textMuted`/`accent`/`accentMuted`/`star`/`success`/`spotify`/`onSpotify`/`scrim`/`shadow`), aplicados via `lib/theme.tsx` (`useTheme`). A preferência é lida primeiro do armazenamento local (`lib/storage.ts`) e sincronizada com `theme_preference` do usuário quando logado. A tela "Aparência" (Perfil → Aparência) mostra os 5 previews.
 - Reviews e notas **ficam no backend**. O SQLite local só guarda a lista "Meus Álbuns" com status.
 - **Coleção física** (`physical_collection`, no Postgres): inventário separado das reviews, permite duplicados do mesmo álbum. CRUD próprio em `GET/POST /api/me/collection` e `PATCH/DELETE /api/me/collection/:id` (busca `?q=` + filtro `?mediaType=`); coleção pública somente-leitura em `GET /api/users/:id/collection` (sem valor pago, condição e edição). Contagem em `counts.collection` no perfil.
 - O gênero vem sempre nulo na busca do Spotify (a API não expõe gênero no objeto de álbum). O app **enriquece** gênero/ano/país via **API pública do Deezer** (best-effort, sem chave) na tela do álbum e salva junto do review/log.
