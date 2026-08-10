@@ -189,10 +189,77 @@ export const albumOfMonth = pgTable(
     albumArtworkUrl: text('album_artwork_url'),
     month: integer('month').notNull(),
     year: integer('year').notNull(),
+    votes: integer('votes'),
+    position: integer('position'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [uniqueIndex('album_of_month_month_year_unique').on(table.month, table.year)],
+)
+
+export const monthlyVotes = pgTable(
+  'monthly_votes',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    month: integer('month').notNull(),
+    year: integer('year').notNull(),
+    opensAt: timestamp('opens_at', { withTimezone: true }).notNull(),
+    closesAt: timestamp('closes_at', { withTimezone: true }).notNull(),
+    revealAt: timestamp('reveal_at', { withTimezone: true }).notNull(),
+    candidatesGeneratedAt: timestamp('candidates_generated_at', { withTimezone: true }),
+    tabulatedAt: timestamp('tabulated_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex('monthly_votes_month_year_unique').on(table.month, table.year)],
+)
+
+export const monthlyVoteCandidates = pgTable(
+  'monthly_vote_candidates',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    voteId: uuid('vote_id')
+      .notNull()
+      .references(() => monthlyVotes.id, { onDelete: 'cascade' }),
+    albumId: text('album_id').notNull(),
+    albumTitle: text('album_title').notNull(),
+    albumArtist: text('album_artist').notNull(),
+    albumArtworkUrl: text('album_artwork_url'),
+    reviewCount: integer('review_count').notNull(),
+    latestReviewAt: timestamp('latest_review_at', { withTimezone: true }).notNull(),
+    averageRating: real('average_rating'),
+    position: integer('position').notNull(),
+    finalVotes: integer('final_votes'),
+    finalRanking: integer('final_ranking'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('monthly_vote_candidates_vote_album_unique').on(table.voteId, table.albumId),
+    index('monthly_vote_candidates_vote_idx').on(table.voteId),
+  ],
+)
+
+export const monthlyVoteBallots = pgTable(
+  'monthly_vote_ballots',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    voteId: uuid('vote_id')
+      .notNull()
+      .references(() => monthlyVotes.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    albumId: text('album_id').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('monthly_vote_ballots_vote_user_album_unique').on(
+      table.voteId,
+      table.userId,
+      table.albumId,
+    ),
+    index('monthly_vote_ballots_vote_user_idx').on(table.voteId, table.userId),
+  ],
 )
 
 export const albumOfMonthComments = pgTable(
@@ -250,3 +317,9 @@ export type AlbumOfMonth = typeof albumOfMonth.$inferSelect
 export type NewAlbumOfMonth = typeof albumOfMonth.$inferInsert
 export type AlbumOfMonthComment = typeof albumOfMonthComments.$inferSelect
 export type NewAlbumOfMonthComment = typeof albumOfMonthComments.$inferInsert
+export type MonthlyVote = typeof monthlyVotes.$inferSelect
+export type NewMonthlyVote = typeof monthlyVotes.$inferInsert
+export type MonthlyVoteCandidate = typeof monthlyVoteCandidates.$inferSelect
+export type NewMonthlyVoteCandidate = typeof monthlyVoteCandidates.$inferInsert
+export type MonthlyVoteBallot = typeof monthlyVoteBallots.$inferSelect
+export type NewMonthlyVoteBallot = typeof monthlyVoteBallots.$inferInsert

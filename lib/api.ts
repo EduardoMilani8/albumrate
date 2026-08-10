@@ -3,8 +3,11 @@ import type {
   AlbumListsResponse,
   AlbumOfMonth,
   AlbumOfMonthCommentsResponse,
+  AlbumOfMonthDetailResponse,
   AlbumOfMonthHistoryResponse,
   AlbumOfMonthResponse,
+  AlbumOfMonthSubmitVoteResponse,
+  AlbumOfMonthVoteStateResponse,
   AlbumReviewsResponse,
   AuthUser,
   CountryBackfillResponse,
@@ -356,24 +359,21 @@ export const api = {
   },
 
   albumOfMonthById(id: string) {
-    return request<AlbumOfMonthResponse>(`/api/album-of-month/${id}`)
+    return request<AlbumOfMonthDetailResponse>(`/api/album-of-month/${id}`)
   },
 
   albumOfMonthHistory() {
     return request<AlbumOfMonthHistoryResponse>('/api/album-of-month/history')
   },
 
-  setAlbumOfMonth(payload: {
-    albumId: string
-    albumTitle: string
-    albumArtist: string
-    albumArtworkUrl?: string | null
-    month: number
-    year: number
-  }) {
-    return request<{ pick: AlbumOfMonth }>('/api/album-of-month', {
+  albumOfMonthVoteState() {
+    return request<AlbumOfMonthVoteStateResponse>('/api/album-of-month/vote/state')
+  },
+
+  submitAlbumOfMonthVote(albumIds: string[]) {
+    return request<AlbumOfMonthSubmitVoteResponse>('/api/album-of-month/vote', {
       method: 'POST',
-      body: payload,
+      body: { albumIds },
     })
   },
 

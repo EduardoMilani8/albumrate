@@ -1,27 +1,30 @@
-import { and, asc, desc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNotNull } from 'drizzle-orm'
 import { Router } from 'express'
 import { z } from 'zod'
 import { db } from '../db.js'
+import {
+  deriveStatus,
+  ensureCandidates,
+  getOrCreateVote,
+  nextMonth,
+  resolveDisplayedAlbum,
+  tabulateIfDue,
+  tabulateOverdueVotes,
+  votePeriodFor,
+} from '../lib/albumOfMonth.js'
 import { type AuthedRequest } from '../lib/auth.js'
-import { todayLocalISO } from '../lib/dates.js'
 import {
   albumOfMonth,
   albumOfMonthComments,
+  monthlyVoteBallots,
+  monthlyVoteCandidates,
+  monthlyVotes,
   users,
   type AlbumOfMonth,
-  type NewAlbumOfMonth,
+  type MonthlyVoteCandidate,
 } from '../schema.js'
 
 const router = Router()
-
-const albumOfMonthSchema = z.object({
-  albumId: z.string().trim().min(1, 'Identificador do álbum inválido.').max(100),
-  albumTitle: z.string().trim().min(1, 'Informe o título do álbum.').max(200),
-  albumArtist: z.string().trim().min(1, 'Informe o artista do álbum.').max(200),
-  albumArtworkUrl: z.string().url('Capa inválida.').max(500).nullable().optional(),
-  month: z.number().int('Mês inválido.').min(1, 'Mês inválido.').max(12, 'Mês inválido.'),
-  year: z.number().int('Ano inválido.').min(1900, 'Ano inválido.').max(2100, 'Ano inválido.'),
-})
 
 const commentSchema = z.object({
   commentText: z
@@ -33,6 +36,15 @@ const commentSchema = z.object({
 
 const idSchema = z.object({ id: z.string().uuid('Identificador inválido.') })
 
+const voteSubmissionSchema = z.object({
+  albumIds: z
+    .array(
+      z.string().trim().min(1, 'Identificador do álbum inválido.').max(100),
+      'A lista de álbuns deve ser um array.',
+    )
+    .length(3, 'Selecione exatamente 3 álbuns diferentes.'),
+})
+
 function pickJson(pick: AlbumOfMonth) {
   return {
     id: pick.id,
@@ -42,52 +54,265 @@ function pickJson(pick: AlbumOfMonth) {
     albumArtworkUrl: pick.albumArtworkUrl,
     month: pick.month,
     year: pick.year,
+    votes: pick.votes,
+    position: pick.position,
     createdAt: pick.createdAt.toISOString(),
     updatedAt: pick.updatedAt.toISOString(),
   }
 }
 
-async function isAdminUser(userId: string): Promise<boolean> {
-  const [user] = await db
-    .select({ isAdmin: users.isAdmin })
-    .from(users)
-    .where(eq(users.id, userId))
-  return user?.isAdmin ?? false
+function candidateJson(candidate: MonthlyVoteCandidate) {
+  return {
+    id: candidate.id,
+    albumId: candidate.albumId,
+    albumTitle: candidate.albumTitle,
+    albumArtist: candidate.albumArtist,
+    albumArtworkUrl: candidate.albumArtworkUrl,
+    reviewCount: candidate.reviewCount,
+    averageRating: candidate.averageRating,
+    position: candidate.position,
+    votes: candidate.finalVotes,
+    rank: candidate.finalRanking,
+  }
 }
 
-async function findAlbumOfMonth(id: string): Promise<AlbumOfMonth | null> {
+async function findAlbumOfMonthById(id: string): Promise<AlbumOfMonth | null> {
   const [pick] = await db.select().from(albumOfMonth).where(eq(albumOfMonth.id, id)).limit(1)
   return pick ?? null
 }
 
-// Álbum do mês atual: devolve o pick do mês corrente (ou null se o admin ainda
-// não definiu). Sempre o mês/ano locais do servidor.
-router.get('/album-of-month', async (req: AuthedRequest, res) => {
-  const iso = todayLocalISO()
-  const year = Number(iso.slice(0, 4))
-  const month = Number(iso.slice(5, 7))
-
-  const [pick] = await db
-    .select()
-    .from(albumOfMonth)
-    .where(and(eq(albumOfMonth.month, month), eq(albumOfMonth.year, year)))
+async function top3Of(year: number, month: number): Promise<MonthlyVoteCandidate[]> {
+  const [vote] = await db
+    .select({ id: monthlyVotes.id })
+    .from(monthlyVotes)
+    .where(and(eq(monthlyVotes.year, year), eq(monthlyVotes.month, month)))
     .limit(1)
+  if (!vote) return []
+  return db
+    .select()
+    .from(monthlyVoteCandidates)
+    .where(
+      and(
+        eq(monthlyVoteCandidates.voteId, vote.id),
+        isNotNull(monthlyVoteCandidates.finalRanking),
+      ),
+    )
+    .orderBy(asc(monthlyVoteCandidates.finalRanking))
+    .limit(3)
+}
 
+// Álbum do mês em destaque HOJE (vencedor já divulgado, ou o do mês anterior
+// durante o intervalo das 00:00 às 08:00 do dia 1).
+router.get('/album-of-month', async (_req: AuthedRequest, res) => {
+  const pick = await resolveDisplayedAlbum()
   res.json({ pick: pick ? pickJson(pick) : null })
 })
 
-// Histórico de álbuns do mês, do mais recente para o mais antigo.
-router.get('/album-of-month/history', async (req: AuthedRequest, res) => {
-  const rows = await db
+// Estado da votação para a tela: a eleição do mês corrente (resultado/divulgação)
+// e a votação em andamento que elege o próximo mês (candidatos + meus votos).
+router.get('/album-of-month/vote/state', async (req: AuthedRequest, res) => {
+  const now = new Date()
+  const cur = { year: now.getFullYear(), month: now.getMonth() + 1 }
+  const up = nextMonth(cur.year, cur.month)
+
+  const curPeriod = votePeriodFor(cur.year, cur.month)
+  const curStatus = deriveStatus(curPeriod, now)
+
+  const current: {
+    status: string
+    opensAt: string
+    closesAt: string
+    revealAt: string
+    results: ReturnType<typeof candidateJson>[] | null
+  } = {
+    status: curStatus,
+    opensAt: curPeriod.opensAt.toISOString(),
+    closesAt: curPeriod.closesAt.toISOString(),
+    revealAt: curPeriod.revealAt.toISOString(),
+    results: null,
+  }
+
+  const curVote = await getOrCreateVote(cur.year, cur.month)
+  await tabulateIfDue(curVote, now)
+
+  if (curStatus === 'revealed') {
+    const results = await top3Of(cur.year, cur.month)
+    current.results = results.map(candidateJson)
+  }
+
+  const upPeriod = votePeriodFor(up.year, up.month)
+  const upStatus = deriveStatus(upPeriod, now)
+
+  const upcoming: {
+    status: string
+    targetMonth: number
+    targetYear: number
+    opensAt: string
+    closesAt: string
+    revealAt: string
+    candidates: ReturnType<typeof candidateJson>[] | null
+    myVotes: string[]
+  } = {
+    status: upStatus,
+    targetMonth: up.month,
+    targetYear: up.year,
+    opensAt: upPeriod.opensAt.toISOString(),
+    closesAt: upPeriod.closesAt.toISOString(),
+    revealAt: upPeriod.revealAt.toISOString(),
+    candidates: null,
+    myVotes: [],
+  }
+
+  const upVote = await getOrCreateVote(up.year, up.month)
+  await ensureCandidates(upVote, now)
+
+  if (upStatus === 'open') {
+    const candidates = await db
+      .select()
+      .from(monthlyVoteCandidates)
+      .where(eq(monthlyVoteCandidates.voteId, upVote.id))
+      .orderBy(asc(monthlyVoteCandidates.position))
+    upcoming.candidates = candidates.map(candidateJson)
+
+    const ballots = await db
+      .select({ albumId: monthlyVoteBallots.albumId })
+      .from(monthlyVoteBallots)
+      .where(
+        and(eq(monthlyVoteBallots.voteId, upVote.id), eq(monthlyVoteBallots.userId, req.userId!)),
+      )
+    upcoming.myVotes = ballots.map((row) => row.albumId)
+  }
+
+  res.json({ current, upcoming })
+})
+
+// Submete os 3 votos do usuário (um por álbum, todos candidatos). Voto é
+// definitivo: uma vez confirmado, não pode ser alterado.
+router.post('/album-of-month/vote', async (req: AuthedRequest, res) => {
+  const parsed = voteSubmissionSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Dados inválidos.' })
+    return
+  }
+
+  const albumIds = parsed.data.albumIds
+  if (new Set(albumIds).size !== 3) {
+    res.status(400).json({ error: 'Os 3 álbuns escolhidos devem ser diferentes.' })
+    return
+  }
+
+  const now = new Date()
+  const up = nextMonth(now.getFullYear(), now.getMonth() + 1)
+  const period = votePeriodFor(up.year, up.month)
+  if (deriveStatus(period, now) !== 'open') {
+    res.status(400).json({ error: 'A votação não está aberta no momento.' })
+    return
+  }
+
+  const vote = await getOrCreateVote(up.year, up.month)
+  await ensureCandidates(vote, now)
+
+  const [already] = await db
+    .select({ id: monthlyVoteBallots.id })
+    .from(monthlyVoteBallots)
+    .where(
+      and(eq(monthlyVoteBallots.voteId, vote.id), eq(monthlyVoteBallots.userId, req.userId!)),
+    )
+    .limit(1)
+  if (already) {
+    res
+      .status(409)
+      .json({ error: 'Você já votou nesta votação. O voto é definitivo e não pode ser alterado.' })
+    return
+  }
+
+  const candidateRows = await db
+    .select({ albumId: monthlyVoteCandidates.albumId })
+    .from(monthlyVoteCandidates)
+    .where(
+      and(
+        eq(monthlyVoteCandidates.voteId, vote.id),
+        inArray(monthlyVoteCandidates.albumId, albumIds),
+      ),
+    )
+  if (candidateRows.length !== 3) {
+    res.status(400).json({ error: 'Todos os álbuns escolhidos precisam ser candidatos da votação.' })
+    return
+  }
+
+  try {
+    await db.transaction(async (tx) => {
+      for (const albumId of albumIds) {
+        await tx
+          .insert(monthlyVoteBallots)
+          .values({ voteId: vote.id, userId: req.userId!, albumId })
+      }
+    })
+  } catch {
+    // Corrida: dois envios simultâneos. A trigger de limite (máx 3) garante que
+    // só o primeiro completa.
+    res
+      .status(409)
+      .json({ error: 'Você já votou nesta votação. O voto é definitivo e não pode ser alterado.' })
+    return
+  }
+
+  res.status(201).json({ voted: true, albumIds })
+})
+
+// Histórico: álbuns do mês consagrados (mais recentes primeiro), cada um com o
+// top 3 da votação e a contagem de votos.
+router.get('/album-of-month/history', async (_req: AuthedRequest, res) => {
+  await tabulateOverdueVotes()
+
+  const picks = await db
     .select()
     .from(albumOfMonth)
     .orderBy(desc(albumOfMonth.year), desc(albumOfMonth.month))
 
-  res.json({ items: rows.map(pickJson) })
+  let items: { pick: ReturnType<typeof pickJson>; top3: ReturnType<typeof candidateJson>[] }[] = []
+  if (picks.length > 0) {
+    const years = [...new Set(picks.map((pick) => pick.year))]
+    const months = [...new Set(picks.map((pick) => pick.month))]
+    const votes = await db
+      .select({ id: monthlyVotes.id, year: monthlyVotes.year, month: monthlyVotes.month })
+      .from(monthlyVotes)
+      .where(and(inArray(monthlyVotes.year, years), inArray(monthlyVotes.month, months)))
+
+    const voteByKey = new Map(votes.map((vote) => [`${vote.year}-${vote.month}`, vote]))
+    const voteIds = votes.map((vote) => vote.id)
+    const topRows = voteIds.length
+      ? await db
+          .select()
+          .from(monthlyVoteCandidates)
+          .where(
+            and(
+              inArray(monthlyVoteCandidates.voteId, voteIds),
+              isNotNull(monthlyVoteCandidates.finalRanking),
+            ),
+          )
+          .orderBy(asc(monthlyVoteCandidates.finalRanking))
+      : []
+
+    const topByVote = new Map<string, MonthlyVoteCandidate[]>()
+    for (const row of topRows) {
+      const list = topByVote.get(row.voteId) ?? []
+      list.push(row)
+      topByVote.set(row.voteId, list)
+    }
+
+    items = picks.map((pick) => {
+      const vote = voteByKey.get(`${pick.year}-${pick.month}`)
+      const top3 = (vote ? topByVote.get(vote.id) ?? [] : []).slice(0, 3)
+      return { pick: pickJson(pick), top3: top3.map(candidateJson) }
+    })
+  }
+
+  res.json({ items })
 })
 
 // Um álbum do mês específico pelo id (usado ao navegar pelo histórico).
-// Registrada DEPOIS de /history para "history" não cair no parâmetro :id.
+// Registrada DEPOIS de /history e /vote para não caírem no parâmetro :id.
 router.get('/album-of-month/:id', async (req: AuthedRequest, res) => {
   const parsed = idSchema.safeParse({ id: String(req.params.id) })
   if (!parsed.success) {
@@ -95,62 +320,15 @@ router.get('/album-of-month/:id', async (req: AuthedRequest, res) => {
     return
   }
 
-  const pick = await findAlbumOfMonth(parsed.data.id)
+  const pick = await findAlbumOfMonthById(parsed.data.id)
   if (!pick) {
     res.status(404).json({ error: 'Álbum do mês não encontrado.' })
     return
   }
 
-  res.json({ pick: pickJson(pick) })
-})
+  const top3 = await top3Of(pick.year, pick.month)
 
-// Admin define (ou corrige) o álbum de um mês. Como só pode existir um por mês,
-// salvar de novo no mesmo mês substitui o anterior.
-router.post('/album-of-month', async (req: AuthedRequest, res) => {
-  if (!(await isAdminUser(req.userId!))) {
-    res.status(403).json({ error: 'Apenas administradores podem definir o álbum do mês.' })
-    return
-  }
-
-  const parsed = albumOfMonthSchema.safeParse(req.body)
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Dados inválidos.' })
-    return
-  }
-
-  const data = parsed.data
-  const now = new Date()
-  const values: NewAlbumOfMonth = {
-    albumId: data.albumId,
-    albumTitle: data.albumTitle,
-    albumArtist: data.albumArtist,
-    albumArtworkUrl: data.albumArtworkUrl ?? null,
-    month: data.month,
-    year: data.year,
-    updatedAt: now,
-  }
-
-  const [saved] = await db
-    .insert(albumOfMonth)
-    .values(values)
-    .onConflictDoUpdate({
-      target: [albumOfMonth.month, albumOfMonth.year],
-      set: {
-        albumId: data.albumId,
-        albumTitle: data.albumTitle,
-        albumArtist: data.albumArtist,
-        albumArtworkUrl: data.albumArtworkUrl ?? null,
-        updatedAt: now,
-      },
-    })
-    .returning()
-
-  if (!saved) {
-    res.status(500).json({ error: 'Não foi possível salvar o álbum do mês.' })
-    return
-  }
-
-  res.status(200).json({ pick: pickJson(saved) })
+  res.json({ pick: pickJson(pick), top3: top3.map(candidateJson) })
 })
 
 // Comentários da discussão do mês, em ordem cronológica. Não expõe e-mail.
@@ -201,7 +379,7 @@ router.post('/album-of-month/:id/comments', async (req: AuthedRequest, res) => {
     return
   }
 
-  if (!(await findAlbumOfMonth(parsedId.data.id))) {
+  if (!(await findAlbumOfMonthById(parsedId.data.id))) {
     res.status(404).json({ error: 'Álbum do mês não encontrado.' })
     return
   }

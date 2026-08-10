@@ -283,6 +283,8 @@ export interface AlbumOfMonth {
   albumArtworkUrl: string | null
   month: number
   year: number
+  votes: number | null
+  position: number | null
   createdAt: string
   updatedAt: string
 }
@@ -291,8 +293,58 @@ export interface AlbumOfMonthResponse {
   pick: AlbumOfMonth | null
 }
 
+export type AlbumOfMonthVoteStatus = 'pending' | 'open' | 'awaiting_reveal' | 'revealed'
+
+export interface AlbumOfMonthCandidate {
+  id: string
+  albumId: string
+  albumTitle: string
+  albumArtist: string
+  albumArtworkUrl: string | null
+  reviewCount: number
+  averageRating: number | null
+  position: number
+  votes: number | null
+  rank: number | null
+}
+
+export interface AlbumOfMonthVoteStateResponse {
+  current: {
+    status: AlbumOfMonthVoteStatus
+    opensAt: string
+    closesAt: string
+    revealAt: string
+    results: AlbumOfMonthCandidate[] | null
+  }
+  upcoming: {
+    status: AlbumOfMonthVoteStatus
+    targetMonth: number
+    targetYear: number
+    opensAt: string
+    closesAt: string
+    revealAt: string
+    candidates: AlbumOfMonthCandidate[] | null
+    myVotes: string[]
+  }
+}
+
+export interface AlbumOfMonthSubmitVoteResponse {
+  voted: boolean
+  albumIds: string[]
+}
+
+export interface AlbumOfMonthDetailResponse {
+  pick: AlbumOfMonth | null
+  top3: AlbumOfMonthCandidate[]
+}
+
+export interface AlbumOfMonthHistoryItem {
+  pick: AlbumOfMonth
+  top3: AlbumOfMonthCandidate[]
+}
+
 export interface AlbumOfMonthHistoryResponse {
-  items: AlbumOfMonth[]
+  items: AlbumOfMonthHistoryItem[]
 }
 
 export interface AlbumOfMonthComment {

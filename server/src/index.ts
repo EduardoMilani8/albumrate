@@ -4,6 +4,7 @@ import express from 'express'
 import rateLimit from 'express-rate-limit'
 import helmet from 'helmet'
 import { authenticate } from './lib/auth.js'
+import { startScheduledJobs } from './lib/scheduler.js'
 import albumOfMonthRouter from './routes/albumOfMonth.js'
 import authRouter from './routes/auth.js'
 import countriesRouter from './routes/countries.js'
@@ -109,3 +110,5 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
 app.listen(port, () => {
   console.log(`albumrate-server rodando na porta ${port}`)
 })
+
+startScheduledJobs()

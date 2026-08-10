@@ -30,6 +30,7 @@ export default function IndexScreen() {
   const [dailyPicking, setDailyPicking] = useState(false)
   const [albumOfMonth, setAlbumOfMonth] = useState<AlbumOfMonth | null>(null)
   const [albumOfMonthLoading, setAlbumOfMonthLoading] = useState(true)
+  const [voteOpen, setVoteOpen] = useState(false)
   const [tab, setTab] = useState<HomeTab>('albums')
   const [feedItems, setFeedItems] = useState<FeedItemType[]>([])
   const [feedLoading, setFeedLoading] = useState(true)
@@ -80,6 +81,14 @@ export default function IndexScreen() {
         })
         .finally(() => {
           if (active) setAlbumOfMonthLoading(false)
+        })
+      api
+        .albumOfMonthVoteState()
+        .then((state) => {
+          if (active) setVoteOpen(state.upcoming.status === 'open')
+        })
+        .catch((err) => {
+          console.warn(err)
         })
       api
         .getFeed()
@@ -219,7 +228,14 @@ export default function IndexScreen() {
           <Ionicons name="calendar" size={20} color={colors.accent} />
         </View>
         <View style={styles.albumOfMonthInfo}>
-          <Text style={styles.albumOfMonthTitle}>Álbum do mês</Text>
+          <View style={styles.albumOfMonthTitleRow}>
+            <Text style={styles.albumOfMonthTitle}>Álbum do mês</Text>
+            {voteOpen ? (
+              <View style={styles.voteBadge}>
+                <Text style={styles.voteBadgeText}>Votação aberta</Text>
+              </View>
+            ) : null}
+          </View>
           {albumOfMonthLoading ? null : albumOfMonth ? (
             <Text style={styles.albumOfMonthSubtitle} numberOfLines={1}>
               {albumOfMonth.albumTitle} — {albumOfMonth.albumArtist}
@@ -369,9 +385,25 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
+  albumOfMonthTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   albumOfMonthTitle: {
     color: colors.text,
     fontSize: 15,
+    fontWeight: '700',
+  },
+  voteBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.sm,
+    backgroundColor: colors.accentMuted,
+  },
+  voteBadgeText: {
+    color: colors.accent,
+    fontSize: 11,
     fontWeight: '700',
   },
   albumOfMonthSubtitle: {
