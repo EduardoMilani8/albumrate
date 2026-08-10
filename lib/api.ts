@@ -10,6 +10,7 @@ import type {
   AlbumOfMonthVoteStateResponse,
   AlbumReviewsResponse,
   AuthUser,
+  CollectionItem,
   CountryBackfillResponse,
   DailyPickResponse,
   DiversityScoreResponse,
@@ -20,6 +21,7 @@ import type {
   MediaCondition,
   MediaType,
   MyReviewsResponse,
+  PublicCollectionItem,
   Review,
   SpotifyExchangeResult,
   SpotifyRecentAlbum,
@@ -242,6 +244,55 @@ export const api = {
 
   myLists() {
     return request<AlbumListsResponse>('/api/me/lists')
+  },
+
+  myCollection(params?: { q?: string; mediaType?: MediaType }) {
+    const query = new URLSearchParams()
+    if (params?.q) query.set('q', params.q)
+    if (params?.mediaType) query.set('mediaType', params.mediaType)
+    const qs = query.toString()
+    return request<{ items: CollectionItem[] }>(`/api/me/collection${qs ? `?${qs}` : ''}`)
+  },
+
+  createCollectionItem(payload: {
+    albumId: string
+    albumTitle: string
+    albumArtist: string
+    albumArtworkUrl?: string | null
+    mediaType: MediaType
+    editionNote: string | null
+    condition: MediaCondition
+    pricePaid: string | null
+    acquiredAt: string
+  }) {
+    return request<{ item: CollectionItem }>('/api/me/collection', {
+      method: 'POST',
+      body: payload,
+    })
+  },
+
+  updateCollectionItem(
+    id: string,
+    payload: Partial<{
+      mediaType: MediaType
+      editionNote: string | null
+      condition: MediaCondition
+      pricePaid: string | null
+      acquiredAt: string
+    }>,
+  ) {
+    return request<{ item: CollectionItem }>(`/api/me/collection/${id}`, {
+      method: 'PATCH',
+      body: payload,
+    })
+  },
+
+  deleteCollectionItem(id: string) {
+    return request<void>(`/api/me/collection/${id}`, { method: 'DELETE' })
+  },
+
+  userCollection(userId: string) {
+    return request<{ items: PublicCollectionItem[] }>(`/api/users/${userId}/collection`)
   },
 
   createList(payload: { name: string; description: string | null; isPublic: boolean }) {

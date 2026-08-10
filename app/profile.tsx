@@ -26,9 +26,11 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true)
   const [spotifyLoading, setSpotifyLoading] = useState(false)
   const [countryBackfillPending, setCountryBackfillPending] = useState(false)
-  const [followCounts, setFollowCounts] = useState<{ followers: number; following: number } | null>(
-    null,
-  )
+  const [followCounts, setFollowCounts] = useState<{
+    followers: number
+    following: number
+    collection: number
+  } | null>(null)
   const backfillRunningRef = useRef(false)
 
   useFocusEffect(
@@ -266,6 +268,15 @@ export default function ProfileScreen() {
                   </Pressable>
                 )}
               </View>
+
+              <Pressable style={styles.diaryButton} onPress={() => router.push('/collection')}>
+                <Ionicons name="albums-outline" size={18} color={colors.text} />
+                <Text style={styles.diaryButtonText}>Minha coleção</Text>
+                {followCounts ? (
+                  <Text style={styles.collectionCount}>{followCounts.collection}</Text>
+                ) : null}
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              </Pressable>
 
               <Pressable style={styles.diaryButton} onPress={() => router.push('/lists')}>
                 <Ionicons name="list-outline" size={18} color={colors.text} />
@@ -520,6 +531,11 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text,
     fontSize: 15,
+    fontWeight: '600',
+  },
+  collectionCount: {
+    color: colors.textMuted,
+    fontSize: 14,
     fontWeight: '600',
   },
   list: {

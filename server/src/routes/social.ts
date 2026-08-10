@@ -13,7 +13,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { db } from '../db.js'
 import { type AuthedRequest } from '../lib/auth.js'
-import { follows, listAlbums, lists, listeningLogs, reviews, users } from '../schema.js'
+import { follows, listAlbums, lists, listeningLogs, physicalCollection, reviews, users } from '../schema.js'
 
 const router = Router()
 
@@ -143,10 +143,11 @@ router.get('/users/:id', async (req: AuthedRequest, res) => {
     return
   }
 
-  const [reviewRow, followersRow, followingRow] = await Promise.all([
+  const [reviewRow, followersRow, followingRow, collectionRow] = await Promise.all([
     db.select({ value: count() }).from(reviews).where(eq(reviews.userId, targetId)),
     db.select({ value: count() }).from(follows).where(eq(follows.followingId, targetId)),
     db.select({ value: count() }).from(follows).where(eq(follows.followerId, targetId)),
+    db.select({ value: count() }).from(physicalCollection).where(eq(physicalCollection.userId, targetId)),
   ]).then((rows) => rows.map(([row]) => row))
 
   const following = targetId !== me ? await isFollowing(me, targetId) : false
@@ -158,6 +159,7 @@ router.get('/users/:id', async (req: AuthedRequest, res) => {
         reviews: reviewRow?.value ?? 0,
         followers: followersRow?.value ?? 0,
         following: followingRow?.value ?? 0,
+        collection: collectionRow?.value ?? 0,
       },
       isFollowing: following,
       isSelf: targetId === me,

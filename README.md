@@ -1,6 +1,6 @@
 # Albumrate
 
-Aplicativo para registrar, avaliar e acompanhar álbuns. Busca de álbuns via API do Spotify, avaliação em estrelas (com meio-ponto), resenha, data em que ouviu, **avaliação opcional de mídia física** (qualidade da prensagem, condição), **diário de escuta** e perfil. Conta com **backend próprio** para usuários e avaliações e **login com Spotify** (OAuth 2.0 + PKCE) com importação opcional de dados.
+Aplicativo para registrar, avaliar e acompanhar álbuns. Busca de álbuns via API do Spotify, avaliação em estrelas (com meio-ponto), resenha, data em que ouviu, **avaliação opcional de mídia física** (qualidade da prensagem, condição), **coleção física** (inventário separado das reviews), **diário de escuta** e perfil. Conta com **backend próprio** para usuários e avaliações e **login com Spotify** (OAuth 2.0 + PKCE) com importação opcional de dados.
 
 Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, em tema dark, + **Node/Express + Postgres (Drizzle)** no `server/`.
 
@@ -10,6 +10,7 @@ Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, em tema dark
 - Avaliação em estrelas de 0,5 a 5 (meio-ponto via toque na metade esquerda/direita da estrela)
 - Resenha (texto) opcional + **data em que ouviu** (padrão: hoje)
 - **Avaliação de mídia física** (opcional, separada da nota do álbum): tipo (vinil/CD/cassete/digital), qualidade do master/prensagem, edição e condição
+- **Coleção física** ("Minha coleção"): inventário separado das reviews — adicione álbuns que você possui (sem precisar tê-los avaliado), com tipo de mídia, edição/prensagem, condição, valor pago (opcional) e data de aquisição. Busca por nome, filtro por tipo de mídia, editar/remover itens. É possível ter mais de um item do mesmo álbum (ex.: 2 prensagens). Aparece como badge "Coleção" no perfil público (somente leitura, sem valor pago)
 - **1 avaliação por usuário por álbum** (reavaliar edita, não duplica)
 - **Nota média de todos os usuários** + lista de resenhas na página do álbum
 - **Diário de escuta**: botão "Marcar como ouvido hoje" na página do álbum + timeline "Meu Diário" agrupada por mês, com remoção de registros
@@ -110,6 +111,7 @@ albumrate/
 │   ├── search.tsx          # busca: abas Álbuns (Spotify) e Pessoas (usuários)
 │   ├── album/[id].tsx      # detalhe: média, resenhas, avaliar, quero ouvir, ouvir hoje, adicionar a lista
 │   ├── diary.tsx           # Meu Diário: timeline de escutas agrupada por mês
+│   ├── collection.tsx      # Minha coleção: lista com busca/filtro por mídia, FAB de adicionar (userId = visão pública)
 │   ├── lists.tsx           # Minhas listas: criar/abrir listas temáticas
 │   ├── list/[id].tsx       # detalhe da lista: adicionar, remover, reordenar álbuns (somente leitura se não for sua)
 │   ├── album-of-month.tsx  # álbum do mês: votação (3 álbuns), resultado, discussão em comentários
@@ -125,6 +127,7 @@ albumrate/
 │   ├── StarRating.tsx      # avaliação por estrelas com meio-ponto
 │   ├── ReviewModal.tsx     # modal de avaliação (nota, resenha, data, mídia física)
 │   ├── MediaReviewCard.tsx # card de avaliação de mídia física (dentro da resenha)
+│   ├── CollectionFormModal.tsx # modal adicionar/editar item da coleção física (busca de álbum + mídia/edição/condição/valor/data)
 │   ├── ListFormModal.tsx   # modal criar/editar lista (nome, descrição, público/privado)
 │   ├── AddToListModal.tsx  # modal "Adicionar a uma lista" na página do álbum
 │   ├── FeedItem.tsx        # item do feed de atividade (review, escuta ou lista)
@@ -148,6 +151,7 @@ albumrate/
 
 - **Web:** o suporte web do `expo-sqlite` é **alpha**. No Chrome o OPFS pode falhar ao abrir o banco (bug conhecido, tela branca). O alvo de teste é o celular (Expo Go).
 - Reviews e notas **ficam no backend**. O SQLite local só guarda a lista "Meus Álbuns" com status.
+- **Coleção física** (`physical_collection`, no Postgres): inventário separado das reviews, permite duplicados do mesmo álbum. CRUD próprio em `GET/POST /api/me/collection` e `PATCH/DELETE /api/me/collection/:id` (busca `?q=` + filtro `?mediaType=`); coleção pública somente-leitura em `GET /api/users/:id/collection` (sem valor pago, condição e edição). Contagem em `counts.collection` no perfil.
 - O gênero vem sempre nulo na busca do Spotify (a API não expõe gênero no objeto de álbum). O app **enriquece** gênero/ano/país via **API pública do Deezer** (best-effort, sem chave) na tela do álbum e salva junto do review/log.
 - O **país do artista** (código ISO) vem do Deezer só quando disponível; o score de diversidade usa gênero + década, e o país entra no mapa apenas se preenchido. Os que faltam são resolvidos em background pelo backend via **MusicBrainz** (tabela `artists` como cache): no save de review/log e via `POST /api/me/countries/backfill`, disparado ao abrir o perfil. Respostas 429/503/erro de rede não são cacheadas (re-tentadas depois); país não encontrado é cacheado como `null`.
 - A busca do Spotify limita a **10 resultados** (`limit=10`); valores maiores retornam 400 `Invalid limit`.

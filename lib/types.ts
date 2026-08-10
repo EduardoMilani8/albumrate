@@ -42,6 +42,31 @@ export type MediaType = 'vinil' | 'cd' | 'cassete' | 'digital'
 
 export type MediaCondition = 'novo' | 'usado' | 'desgastado'
 
+export interface CollectionItem {
+  id: string
+  albumId: string
+  albumTitle: string
+  albumArtist: string
+  albumArtworkUrl: string | null
+  mediaType: MediaType
+  editionNote: string | null
+  condition: MediaCondition
+  pricePaid: string | null
+  acquiredAt: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PublicCollectionItem {
+  id: string
+  albumId: string
+  albumTitle: string
+  albumArtist: string
+  albumArtworkUrl: string | null
+  mediaType: MediaType
+  acquiredAt: string
+}
+
 export interface MediaReview {
   id: string
   mediaType: MediaType
@@ -211,7 +236,7 @@ export interface UserProfile {
   avatarUrl: string | null
   country: string | null
   favoriteGenres: string[]
-  counts: { reviews: number; followers: number; following: number }
+  counts: { reviews: number; followers: number; following: number; collection: number }
   isFollowing: boolean
   isSelf: boolean
 }

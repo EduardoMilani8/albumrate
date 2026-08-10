@@ -3,6 +3,7 @@ import {
   date,
   index,
   integer,
+  numeric,
   pgTable,
   real,
   text,
@@ -179,6 +180,31 @@ export const listAlbums = pgTable(
   ],
 )
 
+export const physicalCollection = pgTable(
+  'physical_collection',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    albumId: text('album_id').notNull(),
+    albumTitle: text('album_title').notNull(),
+    albumArtist: text('album_artist').notNull(),
+    albumArtworkUrl: text('album_artwork_url'),
+    mediaType: text('media_type').notNull(),
+    editionNote: text('edition_note'),
+    condition: text('condition').notNull(),
+    pricePaid: numeric('price_paid', { precision: 10, scale: 2 }),
+    acquiredAt: date('acquired_at', { mode: 'string' }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('physical_collection_user_idx').on(table.userId),
+    index('physical_collection_user_media_idx').on(table.userId, table.mediaType),
+  ],
+)
+
 export const albumOfMonth = pgTable(
   'album_of_month',
   {
@@ -323,3 +349,5 @@ export type MonthlyVoteCandidate = typeof monthlyVoteCandidates.$inferSelect
 export type NewMonthlyVoteCandidate = typeof monthlyVoteCandidates.$inferInsert
 export type MonthlyVoteBallot = typeof monthlyVoteBallots.$inferSelect
 export type NewMonthlyVoteBallot = typeof monthlyVoteBallots.$inferInsert
+export type PhysicalCollectionItem = typeof physicalCollection.$inferSelect
+export type NewPhysicalCollectionItem = typeof physicalCollection.$inferInsert

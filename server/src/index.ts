@@ -7,6 +7,7 @@ import { authenticate } from './lib/auth.js'
 import { startScheduledJobs } from './lib/scheduler.js'
 import albumOfMonthRouter from './routes/albumOfMonth.js'
 import authRouter from './routes/auth.js'
+import collectionRouter from './routes/collection.js'
 import countriesRouter from './routes/countries.js'
 import dailyPickRouter from './routes/dailyPick.js'
 import diversityRouter from './routes/diversity.js'
@@ -95,6 +96,7 @@ app.use('/api', dailyPickRouter)
 app.use('/api', albumOfMonthRouter)
 app.use('/api', countriesRouter)
 app.use('/api', socialRouter)
+app.use('/api', collectionRouter)
 app.use('/api/me/spotify', spotifyImportLimiter)
 app.use('/api', spotifyRouter)
 

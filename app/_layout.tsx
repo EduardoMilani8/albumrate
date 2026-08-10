@@ -71,6 +71,7 @@ function RootNavigator() {
           />
           <Stack.Screen name="album/[id]" options={{ title: '' }} />
           <Stack.Screen name="diary" options={{ title: 'Meu Diário' }} />
+          <Stack.Screen name="collection" options={{ title: 'Minha Coleção' }} />
           <Stack.Screen name="lists" options={{ title: 'Minhas Listas' }} />
           <Stack.Screen name="list/[id]" options={{ title: '' }} />
           <Stack.Screen name="album-of-month" options={{ title: 'Álbum do Mês' }} />

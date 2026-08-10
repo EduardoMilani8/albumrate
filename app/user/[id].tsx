@@ -180,6 +180,18 @@ export default function UserProfileScreen() {
               </View>
             ) : null}
 
+            {profile.counts.collection > 0 ? (
+              <Pressable
+                style={styles.collectionButton}
+                onPress={() => router.push(`/collection?userId=${profile.id}`)}
+              >
+                <Ionicons name="albums-outline" size={18} color={colors.text} />
+                <Text style={styles.collectionButtonText}>Coleção</Text>
+                <Text style={styles.collectionButtonCount}>{profile.counts.collection}</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              </Pressable>
+            ) : null}
+
             {reviews.length > 0 ? (
               <Text style={styles.sectionLabel}>Avaliações recentes</Text>
             ) : null}
@@ -364,6 +376,30 @@ const styles = StyleSheet.create({
   genreChipText: {
     color: colors.text,
     fontSize: 13,
+  },
+  collectionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    alignSelf: 'stretch',
+    marginHorizontal: spacing.md,
+    paddingHorizontal: spacing.md,
+    height: 48,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  collectionButtonText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  collectionButtonCount: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontWeight: '600',
   },
   sectionLabel: {
     alignSelf: 'flex-start',
