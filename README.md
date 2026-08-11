@@ -112,7 +112,7 @@ albumrate/
 │   ├── index.tsx           # home: header "albumrate." + stats, álbum do dia (shuffle), álbum do mês, grid 3 colunas de avaliados + BottomNav
 │   ├── activity.tsx        # Atividade: feed social de quem você segue + BottomNav
 │   ├── search.tsx          # busca: abas Álbuns (Spotify) e Pessoas (usuários) + BottomNav (modo "adicionar à lista" não mostra a barra)
-│   ├── album/[id].tsx      # detalhe: média, resenhas, avaliar, quero ouvir, ouvir hoje, adicionar a lista
+│   ├── album/[id].tsx      # detalhe: hero full-bleed (gradiente + compartilhar), média, avaliar, streaming, adicionar à lista, "Y NA COLEÇÃO", resenhas
 │   ├── diary.tsx           # Meu Diário: timeline de escutas agrupada por mês
 │   ├── collection.tsx      # Minha coleção: lista com busca/filtro por mídia, FAB de adicionar (userId = visão pública)
 │   ├── lists.tsx           # Minhas listas: criar/abrir listas temáticas
@@ -130,8 +130,8 @@ albumrate/
 │   ├── DailyPickCard.tsx   # card compacto "Álbum aleatório do dia" na home (shuffle colorido/disabled)
 │   ├── BottomNav.tsx       # barra de navegação inferior: Home/Atividade/Busca/Coleção/Perfil
 │   ├── StarRating.tsx      # avaliação por estrelas com meio-ponto
-│   ├── ReviewModal.tsx     # modal de avaliação (nota, resenha, data, mídia física)
-│   ├── MediaReviewCard.tsx # card de avaliação de mídia física (dentro da resenha)
+│   ├── ReviewModal.tsx     # modal de avaliação (nota com meio-ponto, data, resenha, mídia física com PAGUEI)
+│   ├── MediaReviewCard.tsx # card de avaliação de mídia física (qualidade, condição, preço pago)
 │   ├── CollectionFormModal.tsx # modal adicionar/editar item da coleção física (busca de álbum + mídia/edição/condição/valor/data)
 │   ├── ListFormModal.tsx   # modal criar/editar lista (nome, descrição, público/privado)
 │   ├── AddToListModal.tsx  # modal "Adicionar a uma lista" na página do álbum
