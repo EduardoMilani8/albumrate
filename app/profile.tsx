@@ -420,7 +420,7 @@ const createStyles = (colors: ThemeTokens) =>
     },
     name: {
       fontFamily: fonts.heading,
-      fontSize: 26,
+      fontSize: 24,
       color: colors.text,
     },
     handle: {
@@ -473,7 +473,8 @@ const createStyles = (colors: ThemeTokens) =>
       borderBottomColor: colors.border,
     },
     mapSection: {
-      gap: spacing.xs,
+      gap: spacing.sm,
+      marginTop: spacing.md,
     },
     genresSection: {
       gap: spacing.sm,
