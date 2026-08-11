@@ -205,7 +205,7 @@ export const api = {
       mediaReview?: {
         mediaType: MediaType
         pressingQualityRating: number
-        editionNote: string | null
+        pricePaid: string | null
         condition: MediaCondition
       } | null
     },

@@ -72,7 +72,7 @@ export interface MediaReview {
   id: string
   mediaType: MediaType
   pressingQualityRating: number
-  editionNote: string | null
+  pricePaid: string | null
   condition: MediaCondition
   createdAt: string
 }
@@ -101,6 +101,7 @@ export interface AlbumReviewsResponse {
   albumId: string
   average: number | null
   count: number
+  collectionCount: number
   reviews: Review[]
   myReview: Review | null
 }

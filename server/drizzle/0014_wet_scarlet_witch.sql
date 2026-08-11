@@ -1,0 +1,1 @@
+ALTER TABLE "media_reviews" ADD COLUMN "price_paid" numeric(10, 2);

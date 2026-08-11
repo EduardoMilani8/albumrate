@@ -5,7 +5,7 @@ import { db } from '../db.js'
 import { type AuthedRequest } from '../lib/auth.js'
 import { resolveArtistCountry } from '../lib/country.js'
 import { isValidDate, todayLocalISO } from '../lib/dates.js'
-import { mediaReviews, reviews, users } from '../schema.js'
+import { mediaReviews, physicalCollection, reviews, users } from '../schema.js'
 import type { MediaReview } from '../schema.js'
 
 const router = Router()
@@ -37,6 +37,12 @@ const conditionSchema = z.enum(['novo', 'usado', 'desgastado'], {
   error: 'Condição da mídia inválida.',
 })
 
+const priceSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{1,8}([.,]\d{1,2})?$/, 'Valor pago inválido.')
+  .transform((value) => value.replace(',', '.'))
+
 const mediaReviewSchema = z.object({
   mediaType: mediaTypeSchema,
   pressingQualityRating: z
@@ -44,13 +50,7 @@ const mediaReviewSchema = z.object({
     .min(1, 'A nota da mídia deve ser de 1 a 5.')
     .max(5, 'A nota da mídia deve ser de 1 a 5.')
     .refine((value) => (value * 2) % 1 === 0, 'A nota da mídia deve ser múltipla de 0,5.'),
-  editionNote: z
-    .string()
-    .trim()
-    .max(200, 'A edição/prensagem deve ter no máximo 200 caracteres.')
-    .nullable()
-    .optional()
-    .transform((value) => value || null),
+  pricePaid: priceSchema.nullable().optional().transform((value) => value || null),
   condition: conditionSchema,
 })
 
@@ -101,7 +101,7 @@ function mediaReviewJson(media: MediaReview) {
     id: media.id,
     mediaType: media.mediaType,
     pressingQualityRating: media.pressingQualityRating,
-    editionNote: media.editionNote,
+    pricePaid: media.pricePaid,
     condition: media.condition,
     createdAt: media.createdAt.toISOString(),
   }
@@ -204,7 +204,7 @@ router.put('/albums/:albumId/reviews/me', async (req: AuthedRequest, res) => {
         reviewId: saved.id,
         mediaType: data.mediaReview.mediaType,
         pressingQualityRating: data.mediaReview.pressingQualityRating,
-        editionNote: data.mediaReview.editionNote ?? null,
+        pricePaid: data.mediaReview.pricePaid ?? null,
         condition: data.mediaReview.condition,
       })
       .onConflictDoUpdate({
@@ -212,7 +212,7 @@ router.put('/albums/:albumId/reviews/me', async (req: AuthedRequest, res) => {
         set: {
           mediaType: data.mediaReview.mediaType,
           pressingQualityRating: data.mediaReview.pressingQualityRating,
-          editionNote: data.mediaReview.editionNote ?? null,
+          pricePaid: data.mediaReview.pricePaid ?? null,
           condition: data.mediaReview.condition,
         },
       })
@@ -304,12 +304,18 @@ router.get('/albums/:albumId/reviews', async (req: AuthedRequest, res) => {
     .from(reviews)
     .where(eq(reviews.albumId, albumId))
 
+  const [collectionRow] = await db
+    .select({ total: count() })
+    .from(physicalCollection)
+    .where(eq(physicalCollection.albumId, albumId))
+
   const myReview = rows.find((row) => row.userId === req.userId) ?? null
 
   res.json({
     albumId,
     average: avgRow?.average ? Number(Number(avgRow.average).toFixed(2)) : null,
     count: avgRow?.total ?? 0,
+    collectionCount: collectionRow?.total ?? 0,
     reviews: rows.map((row) => toReviewJson(row, mediaByReviewId.get(row.id))),
     myReview: myReview ? toReviewJson(myReview, mediaByReviewId.get(myReview.id)) : null,
   })

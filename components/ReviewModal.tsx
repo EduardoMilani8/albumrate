@@ -2,37 +2,44 @@ import DateTimePicker, {
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker'
 import { Ionicons } from '@expo/vector-icons'
+import { Image } from 'expo-image'
 import { useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
 } from 'react-native'
-import { radius, spacing } from '../constants/theme'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { fonts, radius, spacing } from '../constants/theme'
 import type { ThemeTokens } from '../constants/themes'
 import { api } from '../lib/api'
 import { useTheme } from '../lib/theme'
 import type { MediaCondition, MediaType, Review } from '../lib/types'
 import StarRating from './StarRating'
 
-const MEDIA_OPTIONS = [
-  { value: 'vinil', label: 'Vinil' },
-  { value: 'cd', label: 'CD' },
-  { value: 'cassete', label: 'Cassete' },
-  { value: 'digital', label: 'Digital' },
-] as const
+const MEDIA_OPTIONS: { value: MediaType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { value: 'vinil', label: 'Vinil', icon: 'disc-outline' },
+  { value: 'cd', label: 'CD', icon: 'disc' },
+  { value: 'cassete', label: 'Fita', icon: 'albums-outline' },
+  { value: 'digital', label: 'Digital', icon: 'cloud-outline' },
+]
 
-const CONDITION_OPTIONS = [
-  { value: 'novo', label: 'Novo' },
+const CONDITION_OPTIONS: { value: MediaCondition; label: string }[] = [
   { value: 'usado', label: 'Usado' },
+  { value: 'novo', label: 'Novo' },
   { value: 'desgastado', label: 'Desgastado' },
-] as const
+]
+
+const PRICE_REGEX = /^\d{1,8}([.,]\d{1,2})?$/
 
 interface ReviewModalProps {
   visible: boolean
@@ -54,6 +61,16 @@ function formatDate(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+function formatDateBR(date: Date): string {
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  return `${day} / ${month} / ${date.getFullYear()}`
+}
+
+function formatRating(value: number): string {
+  return value.toFixed(1).replace('.', ',')
 }
 
 function parseListenedAt(value: string | null | undefined): Date {
@@ -78,6 +95,7 @@ export default function ReviewModal({
   onDeleted,
 }: ReviewModalProps) {
   const { colors } = useTheme()
+  const insets = useSafeAreaInsets()
   const styles = useMemo(() => createStyles(colors), [colors])
   const [rating, setRating] = useState<number | null>(null)
   const [reviewText, setReviewText] = useState('')
@@ -88,8 +106,8 @@ export default function ReviewModal({
   const [hasMedia, setHasMedia] = useState(false)
   const [mediaType, setMediaType] = useState<MediaType | null>(null)
   const [mediaQuality, setMediaQuality] = useState<number | null>(null)
-  const [editionNote, setEditionNote] = useState('')
   const [mediaCondition, setMediaCondition] = useState<MediaCondition | null>(null)
+  const [pricePaid, setPricePaid] = useState('')
 
   const editing = initialReview !== null
 
@@ -104,8 +122,8 @@ export default function ReviewModal({
       setHasMedia(initialReview?.mediaReview != null)
       setMediaType(initialReview?.mediaReview?.mediaType ?? null)
       setMediaQuality(initialReview?.mediaReview?.pressingQualityRating ?? null)
-      setEditionNote(initialReview?.mediaReview?.editionNote ?? '')
       setMediaCondition(initialReview?.mediaReview?.condition ?? null)
+      setPricePaid((initialReview?.mediaReview?.pricePaid ?? '').replace('.', ','))
     }
   }, [visible, initialReview])
 
@@ -126,11 +144,16 @@ export default function ReviewModal({
         return
       }
       if (mediaQuality === null) {
-        setError('Dê uma nota de 1 a 5 para a qualidade do master/prensagem.')
+        setError('Dê uma nota de 1 a 5 para a qualidade da prensagem.')
         return
       }
       if (!mediaCondition) {
         setError('Escolha a condição da mídia física.')
+        return
+      }
+      const price = pricePaid.trim()
+      if (price && !PRICE_REGEX.test(price)) {
+        setError('Valor pago inválido.')
         return
       }
     }
@@ -152,8 +175,8 @@ export default function ReviewModal({
             ? {
                 mediaType,
                 pressingQualityRating: mediaQuality,
-                editionNote: editionNote.trim() || null,
                 condition: mediaCondition,
+                pricePaid: pricePaid.trim() || null,
               }
             : null,
       })
@@ -188,143 +211,219 @@ export default function ReviewModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <View style={styles.sheet}>
-          <Text style={styles.title}>{editing ? 'Editar avaliação' : 'Avaliar álbum'}</Text>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.sheetWrapper}
+        >
+          <View style={styles.sheet}>
+            <View style={styles.handle} />
 
-          <View style={styles.ratingRow}>
-            <StarRating rating={rating} onChange={setRating} size={36} />
-            {rating !== null ? <Text style={styles.ratingValue}>{rating.toFixed(1)}</Text> : null}
-          </View>
-
-          <TextInput
-            style={styles.input}
-            value={reviewText}
-            onChangeText={setReviewText}
-            placeholder="Escreva sua resenha (opcional)"
-            placeholderTextColor={colors.textMuted}
-            multiline
-            textAlignVertical="top"
-          />
-
-          <Text style={styles.sectionLabel}>Quando você ouviu?</Text>
-          <Pressable style={styles.dateRow} onPress={() => setShowPicker(true)}>
-            <Text style={styles.dateText}>{formatDate(listenedAt)}</Text>
-          </Pressable>
-          {showPicker && Platform.OS === 'android' ? (
-            <DateTimePicker
-              value={listenedAt}
-              mode="date"
-              maximumDate={new Date()}
-              onChange={handleDateChange}
-            />
-          ) : null}
-          {showPicker && Platform.OS === 'ios' ? (
-            <View style={styles.iosPicker}>
-              <DateTimePicker
-                value={listenedAt}
-                mode="date"
-                display="spinner"
-                maximumDate={new Date()}
-                onChange={handleDateChange}
-              />
-              <Pressable style={styles.doneButton} onPress={() => setShowPicker(false)}>
-                <Text style={styles.doneButtonText}>Concluir</Text>
+            <View style={styles.header}>
+              <Pressable onPress={onClose} hitSlop={8} style={styles.headerButton}>
+                <Text style={styles.headerCancel}>Cancelar</Text>
+              </Pressable>
+              <Text style={styles.headerTitle}>Avaliar</Text>
+              <Pressable
+                onPress={handleSave}
+                disabled={saving}
+                hitSlop={8}
+                style={styles.headerButton}
+              >
+                {saving ? (
+                  <ActivityIndicator size="small" color={colors.accent} />
+                ) : (
+                  <Text style={styles.headerSave}>Salvar</Text>
+                )}
               </Pressable>
             </View>
-          ) : null}
 
-          <View style={styles.mediaSection}>
-            <Text style={styles.sectionLabel}>Avaliar mídia física (opcional)</Text>
-            <Pressable style={styles.mediaToggle} onPress={() => setHasMedia((value) => !value)}>
-              <Ionicons
-                name={hasMedia ? 'checkbox' : 'square-outline'}
-                size={20}
-                color={hasMedia ? colors.accent : colors.textMuted}
-              />
-              <Text style={styles.mediaToggleText}>Tenho a mídia física deste álbum</Text>
-            </Pressable>
-
-            {hasMedia ? (
-              <View style={styles.mediaFields}>
-                <Text style={styles.subLabel}>Tipo de mídia</Text>
-                <View style={styles.chipRow}>
-                  {MEDIA_OPTIONS.map((option) => {
-                    const selected = mediaType === option.value
-                    return (
-                      <Pressable
-                        key={option.value}
-                        style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => setMediaType(option.value)}
-                      >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                          {option.label}
-                        </Text>
-                      </Pressable>
-                    )
-                  })}
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: insets.bottom + spacing.lg }}
+            >
+              <View style={styles.albumCard}>
+                <View style={styles.albumCoverWrap}>
+                  {albumArtworkUrl ? (
+                    <Image
+                      source={albumArtworkUrl}
+                      style={styles.albumCover}
+                      contentFit="cover"
+                      transition={150}
+                    />
+                  ) : (
+                    <View style={[styles.albumCover, styles.albumCoverPlaceholder]} />
+                  )}
                 </View>
-
-                <Text style={styles.subLabel}>Qualidade do master/prensagem</Text>
-                <View style={styles.qualityRow}>
-                  <StarRating
-                    rating={mediaQuality}
-                    onChange={(value) => setMediaQuality(Math.max(1, value))}
-                    size={28}
-                  />
-                  {mediaQuality !== null ? (
-                    <Text style={styles.mediaQualityValue}>{mediaQuality.toFixed(1)}</Text>
-                  ) : null}
-                </View>
-
-                <TextInput
-                  style={styles.editionInput}
-                  value={editionNote}
-                  onChangeText={setEditionNote}
-                  placeholder="Edição/prensagem (ex.: 1ª prensagem 1979, reedição colorida)"
-                  placeholderTextColor={colors.textMuted}
-                />
-
-                <Text style={styles.subLabel}>Condição</Text>
-                <View style={styles.chipRow}>
-                  {CONDITION_OPTIONS.map((option) => {
-                    const selected = mediaCondition === option.value
-                    return (
-                      <Pressable
-                        key={option.value}
-                        style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => setMediaCondition(option.value)}
-                      >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                          {option.label}
-                        </Text>
-                      </Pressable>
-                    )
-                  })}
+                <View style={styles.albumInfo}>
+                  <Text style={styles.albumTitle} numberOfLines={1}>
+                    {albumTitle}
+                  </Text>
+                  <Text style={styles.albumMeta} numberOfLines={1}>
+                    {[albumArtist, albumYear ? String(albumYear) : null]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </Text>
                 </View>
               </View>
-            ) : null}
+
+              <View style={styles.ratingSection}>
+                <Text style={styles.ratingHint}>
+                  Sua nota — toque na metade para meia estrela
+                </Text>
+                <View style={styles.ratingStars}>
+                  <StarRating rating={rating} onChange={setRating} size={38} />
+                </View>
+                <Text style={styles.ratingValue}>
+                  {rating !== null ? `${formatRating(rating)} / 5` : '— / 5'}
+                </Text>
+              </View>
+
+              <View style={styles.dateRow}>
+                <Text style={styles.rowLabel}>Ouvi em</Text>
+                <Pressable style={styles.dateButton} onPress={() => setShowPicker(true)}>
+                  <Ionicons name="calendar-outline" size={15} color={colors.accent} />
+                  <Text style={styles.dateText}>{formatDateBR(listenedAt)}</Text>
+                </Pressable>
+              </View>
+              {showPicker && Platform.OS === 'android' ? (
+                <DateTimePicker
+                  value={listenedAt}
+                  mode="date"
+                  maximumDate={new Date()}
+                  onChange={handleDateChange}
+                />
+              ) : null}
+              {showPicker && Platform.OS === 'ios' ? (
+                <View style={styles.iosPicker}>
+                  <DateTimePicker
+                    value={listenedAt}
+                    mode="date"
+                    display="spinner"
+                    maximumDate={new Date()}
+                    onChange={handleDateChange}
+                  />
+                  <Pressable style={styles.doneButton} onPress={() => setShowPicker(false)}>
+                    <Text style={styles.doneButtonText}>Concluir</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+
+              <TextInput
+                style={styles.reviewInput}
+                value={reviewText}
+                onChangeText={setReviewText}
+                placeholder="Escreve aí. Ninguém precisa de resenha bonita — só da tua."
+                placeholderTextColor={colors.textMuted}
+                multiline
+                textAlignVertical="top"
+              />
+
+              <View style={styles.mediaSection}>
+                <View style={styles.mediaHeader}>
+                  <Text style={styles.mediaLabel}>Mídia física · opcional</Text>
+                  <Switch
+                    value={hasMedia}
+                    onValueChange={setHasMedia}
+                    trackColor={{ false: colors.border, true: colors.accent }}
+                    thumbColor={hasMedia ? colors.text : colors.surfaceAlt}
+                  />
+                </View>
+
+                {hasMedia ? (
+                  <View style={styles.mediaFields}>
+                    <View style={styles.segRow}>
+                      {MEDIA_OPTIONS.map((option) => {
+                        const selected = mediaType === option.value
+                        return (
+                          <Pressable
+                            key={option.value}
+                            style={[styles.segCell, selected && styles.segCellSelected]}
+                            onPress={() => setMediaType(option.value)}
+                          >
+                            <Ionicons
+                              name={option.icon}
+                              size={18}
+                              color={selected ? colors.accent : colors.textMuted}
+                            />
+                            <Text
+                              style={[
+                                styles.segCellText,
+                                selected && styles.segCellTextSelected,
+                              ]}
+                            >
+                              {option.label}
+                            </Text>
+                          </Pressable>
+                        )
+                      })}
+                    </View>
+
+                    <View style={styles.mediaRow}>
+                      <Text style={styles.rowLabel}>Qualidade da prensagem</Text>
+                      <StarRating
+                        rating={mediaQuality}
+                        onChange={(value) => setMediaQuality(Math.max(1, value))}
+                        size={13}
+                      />
+                    </View>
+
+                    <View style={styles.mediaRow}>
+                      <Text style={styles.rowLabel}>Condição</Text>
+                      <View style={styles.conditionRow}>
+                        {CONDITION_OPTIONS.map((option) => {
+                          const selected = mediaCondition === option.value
+                          return (
+                            <Pressable
+                              key={option.value}
+                              style={[
+                                styles.conditionTag,
+                                selected && styles.conditionTagSelected,
+                              ]}
+                              onPress={() => setMediaCondition(option.value)}
+                            >
+                              <Text
+                                style={[
+                                  styles.conditionTagText,
+                                  selected && styles.conditionTagTextSelected,
+                                ]}
+                              >
+                                {option.label}
+                              </Text>
+                            </Pressable>
+                          )
+                        })}
+                      </View>
+                    </View>
+
+                    <View style={styles.mediaRow}>
+                      <Text style={styles.rowLabel}>Paguei</Text>
+                      <View style={styles.priceRow}>
+                        <Text style={styles.priceSymbol}>R$</Text>
+                        <TextInput
+                          style={styles.priceInput}
+                          value={pricePaid}
+                          onChangeText={setPricePaid}
+                          keyboardType="decimal-pad"
+                          placeholder="0,00"
+                          placeholderTextColor={colors.textMuted}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                ) : null}
+              </View>
+
+              {editing ? (
+                <Pressable style={styles.deleteButton} onPress={handleDelete}>
+                  <Text style={styles.deleteButtonText}>Excluir avaliação</Text>
+                </Pressable>
+              ) : null}
+
+              {error ? <Text style={styles.error}>{error}</Text> : null}
+            </ScrollView>
           </View>
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-
-          <Pressable style={styles.primaryButton} onPress={handleSave} disabled={saving}>
-            {saving ? (
-              <ActivityIndicator color={colors.background} />
-            ) : (
-              <Text style={styles.primaryButtonText}>{editing ? 'Salvar alterações' : 'Salvar avaliação'}</Text>
-            )}
-          </Pressable>
-
-          {editing ? (
-            <Pressable style={styles.deleteButton} onPress={handleDelete}>
-              <Text style={styles.deleteButtonText}>Excluir avaliação</Text>
-            </Pressable>
-          ) : null}
-
-          <Pressable style={styles.cancelButton} onPress={onClose}>
-            <Text style={styles.cancelButtonText}>Cancelar</Text>
-          </Pressable>
-        </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   )
@@ -337,181 +436,290 @@ const createStyles = (colors: ThemeTokens) =>
       backgroundColor: colors.scrim,
       justifyContent: 'flex-end',
     },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
-    padding: spacing.lg,
-    gap: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-  },
-  ratingValue: {
-    color: colors.star,
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  input: {
-    alignSelf: 'stretch',
-    minHeight: 90,
-    color: colors.text,
-    backgroundColor: colors.background,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    fontSize: 15,
-  },
-  sectionLabel: {
-    color: colors.textMuted,
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginTop: spacing.xs,
-  },
-  dateRow: {
-    alignSelf: 'stretch',
-    height: 44,
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-  },
-  dateText: {
-    color: colors.text,
-    fontSize: 15,
-  },
-  iosPicker: {
-    gap: spacing.sm,
-  },
-  doneButton: {
-    alignSelf: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  doneButtonText: {
-    color: colors.accent,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  mediaSection: {
-    alignSelf: 'stretch',
-    gap: spacing.sm,
-  },
-  mediaToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  mediaToggleText: {
-    color: colors.text,
-    fontSize: 15,
-  },
-  mediaFields: {
-    gap: spacing.sm,
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.md,
-    padding: spacing.md,
-  },
-  subLabel: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-  },
-  chipSelected: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentMuted,
-  },
-  chipText: {
-    color: colors.textMuted,
-    fontSize: 14,
-  },
-  chipTextSelected: {
-    color: colors.text,
-    fontWeight: '600',
-  },
-  qualityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  mediaQualityValue: {
-    color: colors.star,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  editionInput: {
-    alignSelf: 'stretch',
-    minHeight: 44,
-    color: colors.text,
-    backgroundColor: colors.background,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    fontSize: 15,
-  },
-  error: {
-    color: colors.accent,
-    fontSize: 14,
-  },
-  primaryButton: {
-    alignSelf: 'stretch',
-    height: 48,
-    borderRadius: radius.md,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButtonText: {
-    color: colors.background,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  deleteButton: {
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-  },
-  deleteButtonText: {
-    color: colors.accent,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  cancelButton: {
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-  },
-  cancelButtonText: {
-    color: colors.textMuted,
-    fontSize: 15,
-  },
-})
+    sheetWrapper: {
+      justifyContent: 'flex-end',
+    },
+    sheet: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: radius.lg,
+      borderTopRightRadius: radius.lg,
+      maxHeight: '92%',
+      borderTopWidth: 1,
+      borderColor: colors.border,
+    },
+    handle: {
+      width: 38,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: colors.textMuted,
+      opacity: 0.5,
+      alignSelf: 'center',
+      marginTop: spacing.sm,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: 13,
+    },
+    headerButton: {
+      minWidth: 72,
+    },
+    headerCancel: {
+      fontFamily: fonts.kicker,
+      fontSize: 10,
+      letterSpacing: 1.4,
+      color: colors.textMuted,
+      textTransform: 'uppercase',
+    },
+    headerTitle: {
+      fontFamily: fonts.heading,
+      fontSize: 19,
+      color: colors.text,
+    },
+    headerSave: {
+      fontFamily: fonts.kicker,
+      fontSize: 10,
+      letterSpacing: 1.4,
+      color: colors.accent,
+      textTransform: 'uppercase',
+      textAlign: 'right',
+    },
+    albumCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingHorizontal: spacing.lg,
+      paddingBottom: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    albumCoverWrap: {
+      width: 60,
+      height: 60,
+      padding: 4,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    albumCover: {
+      width: '100%',
+      height: '100%',
+      borderRadius: 2,
+    },
+    albumCoverPlaceholder: {
+      backgroundColor: colors.surfaceAlt,
+    },
+    albumInfo: {
+      flex: 1,
+      minWidth: 0,
+    },
+    albumTitle: {
+      fontFamily: fonts.heading,
+      fontSize: 18,
+      color: colors.text,
+    },
+    albumMeta: {
+      fontFamily: fonts.body,
+      fontSize: 12,
+      color: colors.textMuted,
+      marginTop: 2,
+    },
+    ratingSection: {
+      alignItems: 'center',
+      paddingVertical: spacing.lg,
+      paddingHorizontal: spacing.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    ratingHint: {
+      fontFamily: fonts.kicker,
+      fontSize: 9,
+      letterSpacing: 1.6,
+      color: colors.textMuted,
+      textTransform: 'uppercase',
+      textAlign: 'center',
+      marginBottom: 14,
+    },
+    ratingStars: {
+      flexDirection: 'row',
+    },
+    ratingValue: {
+      fontFamily: fonts.headingRegular,
+      fontSize: 30,
+      color: colors.accent,
+      marginTop: 12,
+      fontVariant: ['tabular-nums'],
+    },
+    dateRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    rowLabel: {
+      fontFamily: fonts.kicker,
+      fontSize: 9,
+      letterSpacing: 1.4,
+      color: colors.textMuted,
+      textTransform: 'uppercase',
+    },
+    dateButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 7,
+    },
+    dateText: {
+      fontFamily: fonts.body,
+      fontSize: 15,
+      color: colors.text,
+    },
+    iosPicker: {
+      gap: spacing.sm,
+      paddingHorizontal: spacing.lg,
+    },
+    doneButton: {
+      alignSelf: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+    },
+    doneButtonText: {
+      color: colors.accent,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    reviewInput: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      fontFamily: fonts.italic,
+      fontSize: 14.5,
+      lineHeight: 23,
+      color: colors.text,
+      minHeight: 64,
+    },
+    mediaSection: {
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.md,
+    },
+    mediaHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    mediaLabel: {
+      fontFamily: fonts.kicker,
+      fontSize: 9,
+      letterSpacing: 1.4,
+      color: colors.accent,
+      textTransform: 'uppercase',
+    },
+    mediaFields: {
+      gap: 0,
+    },
+    segRow: {
+      flexDirection: 'row',
+      gap: 7,
+      marginBottom: 13,
+    },
+    segCell: {
+      flex: 1,
+      height: 56,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.xs,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+    },
+    segCellSelected: {
+      borderColor: colors.accent,
+      backgroundColor: colors.surfaceAlt,
+    },
+    segCellText: {
+      fontFamily: fonts.kicker,
+      fontSize: 8.5,
+      letterSpacing: 1,
+      color: colors.textMuted,
+      textTransform: 'uppercase',
+    },
+    segCellTextSelected: {
+      color: colors.accent,
+    },
+    mediaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 11,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      gap: spacing.md,
+    },
+    conditionRow: {
+      flexDirection: 'row',
+      gap: 6,
+    },
+    conditionTag: {
+      paddingHorizontal: 9,
+      paddingVertical: 6,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 2,
+    },
+    conditionTagSelected: {
+      borderColor: colors.accent,
+    },
+    conditionTagText: {
+      fontFamily: fonts.kicker,
+      fontSize: 9,
+      letterSpacing: 1,
+      color: colors.textMuted,
+      textTransform: 'uppercase',
+    },
+    conditionTagTextSelected: {
+      color: colors.accent,
+    },
+    priceRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    priceSymbol: {
+      fontFamily: fonts.headingRegular,
+      fontSize: 17,
+      color: colors.textMuted,
+    },
+    priceInput: {
+      fontFamily: fonts.headingRegular,
+      fontSize: 17,
+      color: colors.accent,
+      minWidth: 80,
+      textAlign: 'right',
+      paddingVertical: 0,
+      paddingHorizontal: 0,
+    },
+    deleteButton: {
+      alignSelf: 'center',
+      paddingVertical: spacing.md,
+    },
+    deleteButtonText: {
+      color: colors.accent,
+      fontSize: 14,
+      fontFamily: fonts.kicker,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+    },
+    error: {
+      color: colors.accent,
+      fontSize: 14,
+      textAlign: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.sm,
+    },
+  })

@@ -69,6 +69,7 @@ export const mediaReviews = pgTable(
     mediaType: text('media_type').notNull(),
     pressingQualityRating: real('pressing_quality_rating').notNull(),
     editionNote: text('edition_note'),
+    pricePaid: numeric('price_paid', { precision: 10, scale: 2 }),
     condition: text('condition').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },

@@ -45,8 +45,8 @@ export default function MediaReviewCard({ mediaReview }: MediaReviewCardProps) {
         </View>
       </View>
 
-      {mediaReview.editionNote ? (
-        <Text style={styles.editionNote}>{mediaReview.editionNote}</Text>
+      {mediaReview.pricePaid ? (
+        <Text style={styles.pricePaid}>R$ {mediaReview.pricePaid}</Text>
       ) : null}
     </View>
   )
@@ -103,9 +103,9 @@ const createStyles = (colors: ThemeTokens) =>
     fontSize: 13,
     fontWeight: '700',
   },
-  editionNote: {
-    color: colors.text,
+  pricePaid: {
+    color: colors.accent,
     fontSize: 13,
-    lineHeight: 18,
+    fontWeight: '600',
   },
 })
