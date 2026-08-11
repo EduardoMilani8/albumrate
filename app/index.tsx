@@ -236,6 +236,10 @@ export default function IndexScreen() {
       />
 
       {renderAlbumOfMonth()}
+
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionLabel}>Meus Álbuns</Text>
+      </View>
     </View>
   )
 
@@ -300,7 +304,7 @@ const createStyles = (colors: ThemeTokens) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: spacing.lg,
-      paddingBottom: spacing.sm,
+      paddingBottom: spacing.xs,
     },
     logo: {
       fontFamily: fonts.heading,
@@ -319,7 +323,7 @@ const createStyles = (colors: ThemeTokens) =>
       flexDirection: 'row',
       alignItems: 'center',
       marginHorizontal: spacing.md,
-      marginTop: spacing.md,
+      marginTop: spacing.sm,
       paddingVertical: spacing.md,
       borderTopWidth: 1,
       borderTopColor: colors.border,
@@ -424,6 +428,22 @@ const createStyles = (colors: ThemeTokens) =>
       fontFamily: fonts.body,
       color: colors.textMuted,
       fontSize: 13,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginHorizontal: spacing.md,
+      marginTop: spacing.md,
+      paddingTop: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    sectionLabel: {
+      fontFamily: fonts.kicker,
+      color: colors.accent,
+      fontSize: 9,
+      letterSpacing: 1.4,
+      textTransform: 'uppercase',
     },
     list: {
       padding: spacing.md,
