@@ -109,8 +109,9 @@ Verifique tipos antes de commitar: `npx tsc --noEmit` (app) e `cd server && npx 
 albumrate/
 ├── app/                    # rotas (expo-router)
 │   ├── _layout.tsx         # providers + fontes (useFonts) + Stack com rotas protegidas (login)
-│   ├── index.tsx           # home: estatísticas, álbum do dia, abas Meus Álbuns/Atividade (feed), FAB
-│   ├── search.tsx          # busca: abas Álbuns (Spotify) e Pessoas (usuários)
+│   ├── index.tsx           # home: header "albumrate." + stats, álbum do dia (shuffle), álbum do mês, grid 3 colunas de avaliados + BottomNav
+│   ├── activity.tsx        # Atividade: feed social de quem você segue + BottomNav
+│   ├── search.tsx          # busca: abas Álbuns (Spotify) e Pessoas (usuários) + BottomNav (modo "adicionar à lista" não mostra a barra)
 │   ├── album/[id].tsx      # detalhe: média, resenhas, avaliar, quero ouvir, ouvir hoje, adicionar a lista
 │   ├── diary.tsx           # Meu Diário: timeline de escutas agrupada por mês
 │   ├── collection.tsx      # Minha coleção: lista com busca/filtro por mídia, FAB de adicionar (userId = visão pública)
@@ -125,8 +126,9 @@ albumrate/
 │   ├── appearance.tsx      # Aparência: grid de 5 temas com preview em miniatura (toque aplica na hora)
 │   └── user/[id].tsx       # perfil público: dados, seguidores/seguindo, botão Seguir, avaliações
 ├── components/
-│   ├── AlbumCard.tsx       # card de álbum nas listas
-│   ├── DailyPickCard.tsx   # card "Álbum aleatório do dia" na home (sortear / já sorteado)
+│   ├── AlbumCard.tsx       # card de álbum em grade 3 colunas (capa quadrada + título + nota)
+│   ├── DailyPickCard.tsx   # card compacto "Álbum aleatório do dia" na home (shuffle colorido/disabled)
+│   ├── BottomNav.tsx       # barra de navegação inferior: Home/Atividade/Busca/Coleção/Perfil
 │   ├── StarRating.tsx      # avaliação por estrelas com meio-ponto
 │   ├── ReviewModal.tsx     # modal de avaliação (nota, resenha, data, mídia física)
 │   ├── MediaReviewCard.tsx # card de avaliação de mídia física (dentro da resenha)
