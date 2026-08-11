@@ -210,7 +210,7 @@ export default function IndexScreen() {
 
   const listHeader = (
     <View>
-      <View style={styles.stats}>
+      <View style={[styles.stats, { marginTop: -10}]}>
         <View style={styles.statItem}>
           <Text style={styles.statKicker}>Álbuns avaliados</Text>
           <Text style={styles.statValue}>{loggedAlbums.length}</Text>
