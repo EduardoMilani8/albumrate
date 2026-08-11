@@ -237,8 +237,7 @@ export default function IndexScreen() {
 
       {renderAlbumOfMonth()}
 
-
-        <Text style={styles.sectionLabel}>Meus Álbuns</Text>
+      <Text style={[styles.sectionLabel, { marginTop: 24 } ,{ marginBottom: -10 }]}>Meus Álbuns</Text>
       <View style={styles.sectionHeader}></View>
     </View>
   )
@@ -336,7 +335,7 @@ const createStyles = (colors: ThemeTokens) =>
     },
     statKicker: {
       fontFamily: fonts.kicker,
-      fontSize: 9,
+      fontSize: 12,
       letterSpacing: 1.4,
       textTransform: 'uppercase',
       color: colors.textMuted,
@@ -441,7 +440,7 @@ const createStyles = (colors: ThemeTokens) =>
     sectionLabel: {
       fontFamily: fonts.kicker,
       color: colors.accent,
-      fontSize: 9,
+      fontSize: 12,
       letterSpacing: 1.4,
       textTransform: 'uppercase',
     },
