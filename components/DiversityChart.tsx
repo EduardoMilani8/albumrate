@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import Svg, { Circle } from 'react-native-svg'
-import { spacing } from '../constants/theme'
+import { fonts, spacing } from '../constants/theme'
 import type { ThemeTokens } from '../constants/themes'
 import { useTheme } from '../lib/theme'
 import type { DiversityBucket } from '../lib/types'
@@ -40,10 +40,7 @@ function summarize(buckets: DiversityBucket[]): DiversityBucket[] {
 
 interface DiversityChartProps {
   score: number | null
-  totalAlbums: number
   genreDistribution: DiversityBucket[]
-  decadeDistribution: DiversityBucket[]
-  countryDistribution: DiversityBucket[]
 }
 
 function Donut({
@@ -87,202 +84,119 @@ function Donut({
   )
 }
 
-export default function DiversityChart({
-  score,
-  totalAlbums,
-  genreDistribution,
-  decadeDistribution,
-  countryDistribution,
-}: DiversityChartProps) {
+export default function DiversityChart({ score, genreDistribution }: DiversityChartProps) {
   const { colors } = useTheme()
   const styles = useMemo(() => createStyles(colors), [colors])
   const slices = summarize(genreDistribution)
+  const hasData = genreDistribution.length > 0
 
   return (
-    <View style={styles.card}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Diversidade musical</Text>
-        <Text style={styles.subtitle}>
-          {totalAlbums === 1 ? '1 álbum ouvido' : `${totalAlbums} álbuns ouvidos`}
-        </Text>
-      </View>
-
-      <View style={styles.chartWrap}>
-        <Donut buckets={slices} size={170} thickness={20} />
+    <View style={styles.row}>
+      <View style={styles.donutWrap}>
+        <Donut buckets={slices} size={96} thickness={14} />
         <View style={styles.center}>
-          <Text style={styles.score}>{score !== null ? score : '—'}</Text>
-          {score !== null ? <Text style={styles.scoreUnit}>/100</Text> : null}
+          <Text style={styles.score}>{score !== null ? Math.round(score) : '—'}</Text>
           <Text style={styles.scoreCaption}>Diversidade</Text>
         </View>
       </View>
 
-      {genreDistribution.length === 0 ? (
-        <Text style={styles.emptyText}>
-          Avalie mais álbuns para calcular seu índice de diversidade por gênero.
-        </Text>
-      ) : (
-        <>
-          <View style={styles.legend}>
-            {slices.map((bucket, index) => (
-              <View key={bucket.label} style={styles.legendRow}>
-                <View
-                  style={[styles.legendDot, { backgroundColor: PALETTE[index % PALETTE.length] }]}
-                />
-                <Text style={styles.legendLabel} numberOfLines={1}>
-                  {bucket.label}
-                </Text>
-                <Text style={styles.legendValue}>
-                  {bucket.count} · {bucket.percentage}%
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          {decadeDistribution.length > 0 ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Por década</Text>
-              <View style={styles.chipRow}>
-                {decadeDistribution.map((bucket) => (
-                  <View key={bucket.label} style={styles.chip}>
-                    <Text style={styles.chipText}>
-                      {bucket.label} · {bucket.count}
-                    </Text>
-                  </View>
-                ))}
-              </View>
+      <View style={styles.legend}>
+        <Text style={styles.legendTitle}>Gêneros</Text>
+        {!hasData ? (
+          <Text style={styles.emptyText}>
+            Avalie álbuns para calcular sua diversidade por gênero.
+          </Text>
+        ) : (
+          slices.map((bucket, index) => (
+            <View key={bucket.label} style={styles.legendRow}>
+              <View
+                style={[styles.legendDot, { backgroundColor: PALETTE[index % PALETTE.length] }]}
+              />
+              <Text style={styles.legendLabel} numberOfLines={1}>
+                {bucket.label}
+              </Text>
+              <Text style={styles.legendValue}>{Math.round(bucket.percentage)}%</Text>
             </View>
-          ) : null}
-
-          {countryDistribution.length > 0 ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>País do artista</Text>
-              <View style={styles.chipRow}>
-                {countryDistribution.map((bucket) => (
-                  <View key={bucket.label} style={styles.chip}>
-                    <Text style={styles.chipText}>
-                      {bucket.label} · {bucket.count}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ) : null}
-        </>
-      )}
+          ))
+        )}
+      </View>
     </View>
   )
 }
 
 const createStyles = (colors: ThemeTokens) =>
   StyleSheet.create({
-    card: {
-    alignItems: 'center',
-    gap: spacing.md,
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.md,
-    padding: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-  },
-  header: {
-    alignSelf: 'stretch',
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-  },
-  title: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  subtitle: {
-    color: colors.textMuted,
-    fontSize: 12,
-  },
-  chartWrap: {
-    width: 170,
-    height: 170,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  center: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  score: {
-    color: colors.text,
-    fontSize: 34,
-    fontWeight: '800',
-  },
-  scoreUnit: {
-    color: colors.textMuted,
-    fontSize: 13,
-  },
-  scoreCaption: {
-    color: colors.textMuted,
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  legend: {
-    alignSelf: 'stretch',
-    gap: spacing.xs,
-  },
-  legendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  legendLabel: {
-    flex: 1,
-    color: colors.text,
-    fontSize: 13,
-  },
-  legendValue: {
-    color: colors.textMuted,
-    fontSize: 12,
-  },
-  section: {
-    alignSelf: 'stretch',
-    gap: spacing.sm,
-  },
-  sectionLabel: {
-    color: colors.textMuted,
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  chip: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipText: {
-    color: colors.textMuted,
-    fontSize: 12,
-  },
-  emptyText: {
-    alignSelf: 'stretch',
-    color: colors.textMuted,
-    fontSize: 13,
-    textAlign: 'center',
-  },
-})
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.lg,
+    },
+    donutWrap: {
+      width: 96,
+      height: 96,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    center: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    score: {
+      fontFamily: fonts.headingRegular,
+      color: colors.text,
+      fontSize: 24,
+      fontVariant: ['tabular-nums'],
+    },
+    scoreCaption: {
+      fontFamily: fonts.kicker,
+      color: colors.textMuted,
+      fontSize: 7,
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
+      marginTop: 2,
+    },
+    legend: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    legendTitle: {
+      fontFamily: fonts.kicker,
+      color: colors.textMuted,
+      fontSize: 10,
+      letterSpacing: 1.4,
+      textTransform: 'uppercase',
+      marginBottom: spacing.xs,
+    },
+    legendRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    legendDot: {
+      width: 9,
+      height: 9,
+      borderRadius: 4.5,
+    },
+    legendLabel: {
+      flex: 1,
+      fontFamily: fonts.body,
+      color: colors.text,
+      fontSize: 13,
+    },
+    legendValue: {
+      fontFamily: fonts.kicker,
+      color: colors.textMuted,
+      fontSize: 10,
+      letterSpacing: 0.5,
+    },
+    emptyText: {
+      fontFamily: fonts.body,
+      color: colors.textMuted,
+      fontSize: 12,
+    },
+  })

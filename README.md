@@ -18,8 +18,8 @@ Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, com **5 tema
 - **Cadastro/login** com e-mail e senha (JWT, token salvo no `expo-secure-store`)
 - **Login com Spotify** (OAuth 2.0 Authorization Code + PKCE): botão na entrada e no cadastro, sem senha. Contas são vinculadas por e-mail quando há conflito (vincular / criar conta nova / cancelar); tokens do Spotify ficam criptografados no servidor
 - **Onboarding de importação** ao conectar: puxa foto/nome/país, top artistas, **gêneros favoritos** (até 5, mostrados no perfil), últimos álbuns ouvidos (→ histórico de escuta) e biblioteca salva (→ lista "Importado do Spotify")
-- **Perfil** com suas avaliações (mais recentes primeiro), avatar do Spotify, gêneros favoritos, card de conexão (conectar/reconectar/desconectar) e logout
-- **Índice de diversidade musical** no perfil: score 0–100 (entropia de Shannon normalizada sobre a distribuição de gêneros), gráfico donut de gêneros e distribuições por década e país do artista
+- **Perfil** (mockup 1e) com header compacto (avatar com inicial, `@NOME · PAÍS`), stats em faixa fina (Avaliações/Coleção/Seguidores/Seguindo), diversidade horizontal (donut + legenda ao lado), mapa-múndi de origem dos artistas (com zoom), gêneros favoritos, avaliações recentes + capas, ajustes na engrenagem (Spotify/Aparência) e logout
+- **Índice de diversidade musical** no perfil: score 0–100 (entropia de Shannon normalizada sobre a distribuição de gêneros) no centro do donut, com a distribuição de gêneros ao lado
 - **Mapa-múndi de origens** no perfil: mostra de quais países vêm os artistas que você ouviu (intensidade de cor = nº de álbuns, toque/hover para detalhes). Países faltantes são resolvidos em background via **MusicBrainz** (cache no backend)
 - Status local: **avaliado** (`logged`) ou **quero ouvir** (`want_to_listen`), com filtro "Quero ouvir" na home (só marca quem ainda não avaliou)
 - **Álbum aleatório do dia**: botão em destaque na home; um sorteio por dia por usuário (prioriza gêneros de menor frequência no seu histórico para puxar diversidade, com fallback para aleatório puro). Depois de sorteado, o botão é substituído pelo card do álbum + "volte amanhã"
@@ -122,7 +122,7 @@ albumrate/
 │   ├── login.tsx           # entrada na conta (e-mail/senha ou botão Spotify)
 │   ├── register.tsx        # cadastro (e-mail/senha ou botão Spotify)
 │   ├── spotify-onboarding.tsx # wizard de importação após conectar o Spotify
-│   ├── profile.tsx         # perfil: avaliações, avatar, gêneros favoritos, conexão Spotify, logout
+│   ├── profile.tsx         # perfil (1e): header compacto, stats, diversidade, mapa, ajustes na engrenagem, logout
 │   ├── appearance.tsx      # Aparência: grid de 5 temas com preview em miniatura (toque aplica na hora)
 │   └── user/[id].tsx       # perfil público: dados, seguidores/seguindo, botão Seguir, avaliações
 ├── components/
@@ -136,8 +136,8 @@ albumrate/
 │   ├── ListFormModal.tsx   # modal criar/editar lista (nome, descrição, público/privado)
 │   ├── AddToListModal.tsx  # modal "Adicionar a uma lista" na página do álbum
 │   ├── FeedItem.tsx        # item do feed de atividade (review, escuta ou lista)
-│   ├── DiversityChart.tsx  # donut de diversidade (react-native-svg) + legenda
-│   ├── WorldMap.tsx        # mapa-múndi de origens dos artistas (react-native-svg)
+│   ├── DiversityChart.tsx  # donut de diversidade à esquerda + legenda (bolinha/gênero/%) ao lado (react-native-svg)
+│   ├── WorldMap.tsx        # mapa-múndi de origens dos artistas (react-native-svg) com pinch-to-zoom + pan (gesture-handler + reanimated)
 ├── constants/
 │   ├── theme.ts            # tokens do tema padrão (dark): colors, spacing, radius (inclui xs), fonts (Cormorant/Lora/Courier)
 │   ├── themes.ts           # 5 temas predefinidos (Claro/Escuro/Midnight/Sépia/Neon) com todos os tokens de cor
