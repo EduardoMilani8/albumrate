@@ -207,7 +207,7 @@ export default function ProfileScreen() {
                 </View>
 
                 <View style={styles.headerInfo}>
-                  <Text style={styles.name} numberOfLines={1}>
+                  <Text style={styles.name} numberOfLines={2}>
                     {user?.name ?? 'Sem nome'}
                   </Text>
                   <Text style={styles.handle} numberOfLines={1}>
@@ -390,7 +390,7 @@ const createStyles = (colors: ThemeTokens) =>
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.md,
+      gap: spacing.lg,
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.md,
     },
@@ -416,11 +416,11 @@ const createStyles = (colors: ThemeTokens) =>
     },
     headerInfo: {
       flex: 1,
-      gap: spacing.xs,
+      gap: spacing.sm,
     },
     name: {
       fontFamily: fonts.heading,
-      fontSize: 24,
+      fontSize: 28,
       color: colors.text,
     },
     handle: {
@@ -501,8 +501,8 @@ const createStyles = (colors: ThemeTokens) =>
       flex: 1,
     },
     list: {
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.sm,
+      paddingHorizontal: 16,
+      paddingVertical: 0,
       paddingBottom: 104,
       gap: spacing.sm,
     },
