@@ -173,7 +173,7 @@ export default function DiaryScreen() {
               <Text style={styles.headerTitle}>Diário</Text>
             </View>
           </View>
-          <Ionicons name="options-outline" size={20} color={colors.textMuted} style={styles.headerIcon} />
+          <Ionicons name="options-outline" size={22} color={colors.textMuted} style={styles.headerIcon} />
         </View>
       </View>
 
@@ -313,7 +313,7 @@ const createStyles = (colors: ThemeTokens) =>
     },
     headerKicker: {
       fontFamily: fonts.kicker,
-      fontSize: 10,
+      fontSize: 12,
       letterSpacing: 1.6,
       color: colors.textMuted,
     },
@@ -332,7 +332,7 @@ const createStyles = (colors: ThemeTokens) =>
     },
     sectionHeader: {
       fontFamily: fonts.kicker,
-      fontSize: 10,
+      fontSize: 13,
       letterSpacing: 1.6,
       color: colors.textMuted,
       textTransform: 'uppercase',
@@ -359,14 +359,14 @@ const createStyles = (colors: ThemeTokens) =>
     },
     day: {
       fontFamily: fonts.headingRegular,
-      fontSize: 24,
+      fontSize: 30,
       lineHeight: 24,
       fontVariant: ['tabular-nums'],
       color: colors.text,
     },
     month: {
       fontFamily: fonts.kicker,
-      fontSize: 8,
+      fontSize: 12,
       letterSpacing: 0.8,
       color: colors.textMuted,
       marginTop: 3,
