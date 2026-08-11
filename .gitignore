@@ -40,3 +40,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# generated docs claude
+docs/design/albumrate-brief/
+Mobile app design brief/

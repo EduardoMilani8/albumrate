@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { useMemo } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { radius, spacing } from '../constants/theme'
+import { fonts, radius, spacing } from '../constants/theme'
 import type { ThemeTokens } from '../constants/themes'
 import type { LoggedAlbum } from '../lib/types'
 import { useTheme } from '../lib/theme'
@@ -22,12 +22,14 @@ export default function AlbumCard({ album, rating, onPress }: AlbumCardProps) {
 
   return (
     <Pressable onPress={onPress} style={styles.card}>
-      <Image
-        source={album.artworkUrl ?? undefined}
-        style={styles.cover}
-        contentFit="cover"
-        transition={150}
-      />
+      <View style={styles.coverFrame}>
+        <Image
+          source={album.artworkUrl ?? undefined}
+          style={styles.cover}
+          contentFit="cover"
+          transition={150}
+        />
+      </View>
       <View style={styles.info}>
         <Text style={styles.title} numberOfLines={1}>
           {album.title}
@@ -39,7 +41,7 @@ export default function AlbumCard({ album, rating, onPress }: AlbumCardProps) {
           {year ? <Text style={styles.year}>{year}</Text> : null}
           {album.status === 'logged' ? (
             <View style={styles.rating}>
-              <Ionicons name="star" size={14} color={colors.star} />
+              <Ionicons name="star" size={13} color={colors.star} />
               <Text style={styles.ratingText}>{rating?.toFixed(1) ?? '—'}</Text>
             </View>
           ) : (
@@ -56,15 +58,21 @@ const createStyles = (colors: ThemeTokens) =>
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    borderRadius: radius.xs,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: spacing.sm,
     gap: spacing.md,
   },
+  coverFrame: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    padding: 3,
+  },
   cover: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.sm,
+    width: 52,
+    height: 52,
     backgroundColor: colors.surfaceAlt,
   },
   info: {
@@ -72,11 +80,13 @@ const createStyles = (colors: ThemeTokens) =>
     gap: spacing.xs,
   },
   title: {
+    fontFamily: fonts.heading,
     color: colors.text,
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 16,
+    lineHeight: 19,
   },
   artist: {
+    fontFamily: fonts.body,
     color: colors.textMuted,
     fontSize: 13,
   },
@@ -86,6 +96,7 @@ const createStyles = (colors: ThemeTokens) =>
     gap: spacing.sm,
   },
   year: {
+    fontFamily: fonts.body,
     color: colors.textMuted,
     fontSize: 12,
   },
@@ -95,13 +106,16 @@ const createStyles = (colors: ThemeTokens) =>
     gap: spacing.xs,
   },
   ratingText: {
+    fontFamily: fonts.bodySemiBold,
     color: colors.star,
     fontSize: 12,
-    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
   },
   wantToListen: {
+    fontFamily: fonts.kicker,
     color: colors.accent,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 9,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
 })

@@ -6,7 +6,7 @@ import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View }
 import AlbumCard from '../components/AlbumCard'
 import DailyPickCard from '../components/DailyPickCard'
 import FeedItem from '../components/FeedItem'
-import { radius, spacing } from '../constants/theme'
+import { fonts, radius, spacing } from '../constants/theme'
 import type { ThemeTokens } from '../constants/themes'
 import { api } from '../lib/api'
 import { getAllAlbums } from '../lib/db'
@@ -206,13 +206,18 @@ export default function IndexScreen() {
     <View style={styles.container}>
       <View style={styles.stats}>
         <View style={styles.statItem}>
+          <Text style={styles.statKicker}>Álbuns avaliados</Text>
           <Text style={styles.statValue}>{logged.length}</Text>
-          <Text style={styles.statLabel}>Álbuns</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
-          <Text style={styles.statValue}>{average !== null ? average.toFixed(1) : '—'}</Text>
-          <Text style={styles.statLabel}>Nota média</Text>
+          <Text style={styles.statKicker}>Nota média</Text>
+          <View style={styles.statValueRow}>
+            <Text style={[styles.statValue, styles.statValueAccent]}>
+              {average !== null ? average.toFixed(1) : '—'}
+            </Text>
+            {average !== null ? <Ionicons name="star" size={14} color={colors.accent} /> : null}
+          </View>
         </View>
       </View>
 
@@ -253,16 +258,16 @@ export default function IndexScreen() {
         <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
       </Pressable>
 
-      <View style={styles.segmented}>
+      <View style={styles.tabs}>
         {(['albums', 'feed'] as const).map((key) => {
           const active = tab === key
           return (
             <Pressable
               key={key}
-              style={[styles.segment, active && styles.segmentActive]}
+              style={[styles.tab, active && styles.tabActive]}
               onPress={() => setTab(key)}
             >
-              <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
+              <Text style={[styles.tabText, active && styles.tabTextActive]}>
                 {key === 'albums' ? 'Meus Álbuns' : 'Atividade'}
               </Text>
             </Pressable>
@@ -274,16 +279,16 @@ export default function IndexScreen() {
         renderFeed()
       ) : (
         <>
-          <View style={styles.segmented}>
+          <View style={styles.filterRow}>
             {(['all', 'want_to_listen'] as const).map((key) => {
               const active = filter === key
               return (
                 <Pressable
                   key={key}
-                  style={[styles.segment, active && styles.segmentActive]}
+                  style={[styles.filterChip, active && styles.filterChipActive]}
                   onPress={() => setFilter(key)}
                 >
-                  <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
+                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
                     {key === 'all' ? 'Todos' : 'Quero ouvir'}
                   </Text>
                 </Pressable>
@@ -325,7 +330,7 @@ export default function IndexScreen() {
 
       {tab === 'albums' ? (
         <Pressable style={styles.fab} onPress={() => router.push('/search')}>
-          <Ionicons name="add" size={28} color={colors.background} />
+          <Ionicons name="add" size={28} color={colors.accent} />
         </Pressable>
       ) : null}
     </View>
@@ -343,27 +348,42 @@ const createStyles = (colors: ThemeTokens) =>
     alignItems: 'center',
     marginHorizontal: spacing.md,
     marginTop: spacing.md,
-    padding: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
-    gap: spacing.xs,
+  },
+  statKicker: {
+    fontFamily: fonts.kicker,
+    fontSize: 9,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: colors.textMuted,
+    marginBottom: 6,
   },
   statValue: {
+    fontFamily: fonts.headingRegular,
+    fontSize: 32,
     color: colors.text,
-    fontSize: 24,
-    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
   },
-  statLabel: {
-    color: colors.textMuted,
-    fontSize: 12,
+  statValueAccent: {
+    color: colors.accent,
+  },
+  statValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   statDivider: {
     width: 1,
     alignSelf: 'stretch',
+    marginVertical: 8,
     backgroundColor: colors.border,
   },
   albumOfMonthCard: {
@@ -373,22 +393,19 @@ const createStyles = (colors: ThemeTokens) =>
     marginHorizontal: spacing.md,
     marginTop: spacing.md,
     padding: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    borderRadius: radius.xs,
     borderWidth: 1,
     borderColor: colors.border,
   },
   albumOfMonthIcon: {
     width: 40,
     height: 40,
-    borderRadius: radius.sm,
-    backgroundColor: colors.accentMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
   albumOfMonthInfo: {
     flex: 1,
-    gap: 2,
+    gap: 3,
   },
   albumOfMonthTitleRow: {
     flexDirection: 'row',
@@ -396,53 +413,81 @@ const createStyles = (colors: ThemeTokens) =>
     gap: spacing.sm,
   },
   albumOfMonthTitle: {
+    fontFamily: fonts.heading,
     color: colors.text,
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 17,
+    lineHeight: 20,
   },
   voteBadge: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-    backgroundColor: colors.accentMuted,
+    paddingVertical: 3,
+    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: colors.accent,
   },
   voteBadgeText: {
+    fontFamily: fonts.kicker,
     color: colors.accent,
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 9,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   albumOfMonthSubtitle: {
+    fontFamily: fonts.body,
     color: colors.textMuted,
     fontSize: 13,
   },
-  segmented: {
+  tabs: {
     flexDirection: 'row',
+    gap: spacing.lg,
     marginHorizontal: spacing.md,
     marginTop: spacing.md,
-    padding: 4,
-    gap: 4,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  tab: {
+    paddingBottom: 10,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabActive: {
+    borderBottomColor: colors.accent,
+  },
+  tabText: {
+    fontFamily: fonts.heading,
+    fontSize: 15,
+    letterSpacing: 0.4,
+    color: colors.textMuted,
+  },
+  tabTextActive: {
+    color: colors.text,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+  },
+  filterChip: {
+    height: 32,
+    paddingHorizontal: spacing.md,
+    borderRadius: 2,
     borderWidth: 1,
     borderColor: colors.border,
-  },
-  segment: {
-    flex: 1,
-    height: 36,
-    borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  segmentActive: {
-    backgroundColor: colors.accentMuted,
+  filterChipActive: {
+    borderColor: colors.accent,
   },
-  segmentText: {
+  filterChipText: {
+    fontFamily: fonts.body,
     color: colors.textMuted,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
   },
-  segmentTextActive: {
-    color: colors.text,
+  filterChipTextActive: {
+    fontFamily: fonts.bodySemiBold,
+    color: colors.accent,
   },
   list: {
     padding: spacing.md,
@@ -471,16 +516,17 @@ const createStyles = (colors: ThemeTokens) =>
   },
   emptyButton: {
     height: 44,
-    borderRadius: 500,
+    borderRadius: 2,
     paddingHorizontal: spacing.lg,
-    backgroundColor: colors.accent,
+    borderWidth: 1,
+    borderColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptyButtonText: {
-    color: colors.background,
+    fontFamily: fonts.heading,
+    color: colors.accent,
     fontSize: 15,
-    fontWeight: '700',
   },
   fab: {
     position: 'absolute',
@@ -489,12 +535,14 @@ const createStyles = (colors: ThemeTokens) =>
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 6,
+    elevation: 4,
     shadowColor: colors.shadow,
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.35,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
   },

@@ -1,4 +1,8 @@
+import { CormorantGaramond_400Regular, CormorantGaramond_600SemiBold } from '@expo-google-fonts/cormorant-garamond'
+import { CourierPrime_400Regular, CourierPrime_700Bold } from '@expo-google-fonts/courier-prime'
+import { Lora_400Regular, Lora_400Regular_Italic, Lora_500Medium, Lora_600SemiBold } from '@expo-google-fonts/lora'
 import { Ionicons } from '@expo/vector-icons'
+import { useFonts } from 'expo-font'
 import { router, Stack } from 'expo-router'
 import { SQLiteProvider } from 'expo-sqlite'
 import { StatusBar } from 'expo-status-bar'
@@ -10,6 +14,21 @@ import { initDb } from '../lib/db'
 import { ThemeProvider, useTheme } from '../lib/theme'
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    CormorantGaramond_400Regular,
+    CormorantGaramond_600SemiBold,
+    Lora_400Regular,
+    Lora_500Medium,
+    Lora_600SemiBold,
+    Lora_400Regular_Italic,
+    CourierPrime_400Regular,
+    CourierPrime_700Bold,
+  })
+
+  if (!fontsLoaded) {
+    return null
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SQLiteProvider databaseName="albumrate.db" onInit={initDb}>

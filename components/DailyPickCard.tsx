@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { useMemo } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
-import { radius, spacing } from '../constants/theme'
+import { fonts, radius, spacing } from '../constants/theme'
 import type { ThemeTokens } from '../constants/themes'
 import type { DailyPick } from '../lib/types'
 import { useTheme } from '../lib/theme'
@@ -27,8 +27,8 @@ export default function DailyPickCard({
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <Ionicons name="dice-outline" size={20} color={colors.accent} />
-        <Text style={styles.title}>Álbum aleatório do dia</Text>
+        <Ionicons name="dice-outline" size={18} color={colors.accent} />
+        <Text style={styles.kicker}>Álbum do dia</Text>
       </View>
 
       {loading ? (
@@ -38,12 +38,14 @@ export default function DailyPickCard({
       ) : pick ? (
         <View style={styles.picked}>
           <View style={styles.albumRow}>
-            <Image
-              source={pick.albumArtworkUrl ?? undefined}
-              style={styles.cover}
-              contentFit="cover"
-              transition={150}
-            />
+            <View style={styles.coverFrame}>
+              <Image
+                source={pick.albumArtworkUrl ?? undefined}
+                style={styles.cover}
+                contentFit="cover"
+                transition={150}
+              />
+            </View>
             <View style={styles.info}>
               <Text style={styles.albumTitle} numberOfLines={1}>
                 {pick.albumTitle}
@@ -56,7 +58,7 @@ export default function DailyPickCard({
           <View style={styles.footer}>
             <Text style={styles.comeBack}>Já sorteado hoje — volte amanhã</Text>
             <Pressable style={styles.openButton} onPress={() => onOpenAlbum(pick)}>
-              <Ionicons name="arrow-forward" size={16} color={colors.accent} />
+              <Ionicons name="arrow-forward" size={15} color={colors.accent} />
               <Text style={styles.openButtonText}>Ver álbum</Text>
             </Pressable>
           </View>
@@ -68,9 +70,9 @@ export default function DailyPickCard({
           disabled={picking}
         >
           {picking ? (
-            <ActivityIndicator color={colors.background} />
+            <ActivityIndicator color={colors.accent} />
           ) : (
-            <Ionicons name="shuffle" size={20} color={colors.background} />
+            <Ionicons name="shuffle" size={18} color={colors.accent} />
           )}
           <Text style={styles.pickButtonText}>
             {picking ? 'Sorteando...' : 'Sortear álbum do dia'}
@@ -86,11 +88,9 @@ const createStyles = (colors: ThemeTokens) =>
   card: {
     marginHorizontal: spacing.md,
     marginTop: spacing.md,
-    padding: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
     gap: spacing.md,
   },
   header: {
@@ -98,10 +98,12 @@ const createStyles = (colors: ThemeTokens) =>
     alignItems: 'center',
     gap: spacing.sm,
   },
-  title: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '700',
+  kicker: {
+    fontFamily: fonts.kicker,
+    color: colors.accent,
+    fontSize: 9,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
   },
   center: {
     paddingVertical: spacing.sm,
@@ -115,10 +117,15 @@ const createStyles = (colors: ThemeTokens) =>
     alignItems: 'center',
     gap: spacing.md,
   },
+  coverFrame: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    padding: 3,
+  },
   cover: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.sm,
+    width: 54,
+    height: 54,
     backgroundColor: colors.surfaceAlt,
   },
   info: {
@@ -126,11 +133,13 @@ const createStyles = (colors: ThemeTokens) =>
     gap: spacing.xs,
   },
   albumTitle: {
+    fontFamily: fonts.heading,
     color: colors.text,
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 18,
+    lineHeight: 21,
   },
   albumArtist: {
+    fontFamily: fonts.body,
     color: colors.textMuted,
     fontSize: 13,
   },
@@ -141,6 +150,7 @@ const createStyles = (colors: ThemeTokens) =>
     gap: spacing.sm,
   },
   comeBack: {
+    fontFamily: fonts.body,
     color: colors.textMuted,
     fontSize: 12,
     flex: 1,
@@ -151,14 +161,15 @@ const createStyles = (colors: ThemeTokens) =>
     gap: spacing.xs,
   },
   openButtonText: {
+    fontFamily: fonts.heading,
     color: colors.accent,
     fontSize: 14,
-    fontWeight: '600',
   },
   pickButton: {
-    height: 48,
-    borderRadius: radius.md,
-    backgroundColor: colors.accent,
+    height: 46,
+    borderRadius: radius.xs,
+    borderWidth: 1,
+    borderColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -168,8 +179,8 @@ const createStyles = (colors: ThemeTokens) =>
     opacity: 0.7,
   },
   pickButtonText: {
-    color: colors.background,
-    fontSize: 16,
-    fontWeight: '700',
+    fontFamily: fonts.heading,
+    color: colors.accent,
+    fontSize: 15,
   },
 })

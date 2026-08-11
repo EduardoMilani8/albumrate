@@ -21,7 +21,19 @@ export const spacing = {
 } as const
 
 export const radius = {
+  xs: 4,
   sm: 6,
   md: 12,
   lg: 20,
+} as const
+
+export const fonts = {
+  heading: 'CormorantGaramond_600SemiBold',
+  headingRegular: 'CormorantGaramond_400Regular',
+  body: 'Lora_400Regular',
+  bodyMedium: 'Lora_500Medium',
+  bodySemiBold: 'Lora_600SemiBold',
+  italic: 'Lora_400Regular_Italic',
+  kicker: 'CourierPrime_700Bold',
+  kickerRegular: 'CourierPrime_400Regular',
 } as const
