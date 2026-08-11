@@ -188,65 +188,66 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.avatar}>
-          {user?.avatarUrl ? (
-            <Image source={user.avatarUrl} style={styles.avatarImage} contentFit="cover" />
-          ) : (
-            <Text style={styles.avatarInitial}>{(user?.name?.[0] ?? '?').toUpperCase()}</Text>
-          )}
-        </View>
-
-        <View style={styles.headerInfo}>
-          <Text style={styles.name} numberOfLines={1}>
-            {user?.name ?? 'Sem nome'}
-          </Text>
-          <Text style={styles.handle} numberOfLines={1}>
-            {handle}
-            {user?.country ? ` · ${user.country}` : ''}
-          </Text>
-        </View>
-
-        <View style={styles.headerIcons}>
-          <Pressable hitSlop={8} onPress={() => router.push('/diary')}>
-            <Ionicons name="book-outline" size={22} color={colors.text} />
-          </Pressable>
-          <Pressable hitSlop={8} onPress={() => router.push('/lists')}>
-            <Ionicons name="list-outline" size={22} color={colors.text} />
-          </Pressable>
-          <Pressable hitSlop={8} onPress={() => setSettingsOpen(true)}>
-            <Ionicons name="settings-outline" size={22} color={colors.text} />
-          </Pressable>
-        </View>
-      </View>
-
-      <View style={styles.stats}>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{reviews.length}</Text>
-          <Text style={styles.statLabel}>Avaliações</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{followCounts?.collection ?? '—'}</Text>
-          <Text style={styles.statLabel}>Coleção</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{followCounts?.followers ?? '—'}</Text>
-          <Text style={styles.statLabel}>Seguidores</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{followCounts?.following ?? '—'}</Text>
-          <Text style={styles.statLabel}>Seguindo</Text>
-        </View>
-      </View>
-
       {loading ? (
         <ActivityIndicator color={colors.accent} style={styles.loading} />
       ) : (
         <FlatList
           data={reviews}
           keyExtractor={(item) => item.id}
+          renderItem={undefined}
           ListHeaderComponent={
             <View style={styles.listHeader}>
+              <View style={styles.header}>
+                <View style={styles.avatar}>
+                  {user?.avatarUrl ? (
+                    <Image source={user.avatarUrl} style={styles.avatarImage} contentFit="cover" />
+                  ) : (
+                    <Text style={styles.avatarInitial}>{(user?.name?.[0] ?? '?').toUpperCase()}</Text>
+                  )}
+                </View>
+
+                <View style={styles.headerInfo}>
+                  <Text style={styles.name} numberOfLines={1}>
+                    {user?.name ?? 'Sem nome'}
+                  </Text>
+                  <Text style={styles.handle} numberOfLines={1}>
+                    {handle}
+                    {user?.country ? ` · ${user.country}` : ''}
+                  </Text>
+                </View>
+
+                <View style={styles.headerIcons}>
+                  <Pressable hitSlop={8} onPress={() => router.push('/diary')}>
+                    <Ionicons name="book-outline" size={22} color={colors.text} />
+                  </Pressable>
+                  <Pressable hitSlop={8} onPress={() => router.push('/lists')}>
+                    <Ionicons name="list-outline" size={22} color={colors.text} />
+                  </Pressable>
+                  <Pressable hitSlop={8} onPress={() => setSettingsOpen(true)}>
+                    <Ionicons name="settings-outline" size={22} color={colors.text} />
+                  </Pressable>
+                </View>
+              </View>
+
+              <View style={styles.stats}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{reviews.length}</Text>
+                  <Text style={styles.statLabel}>Avaliações</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{followCounts?.collection ?? '—'}</Text>
+                  <Text style={styles.statLabel}>Coleção</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{followCounts?.followers ?? '—'}</Text>
+                  <Text style={styles.statLabel}>Seguidores</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{followCounts?.following ?? '—'}</Text>
+                  <Text style={styles.statLabel}>Seguindo</Text>
+                </View>
+              </View>
+
               {diversity ? (
                 <>
                   <DiversityChart
@@ -257,7 +258,7 @@ export default function ProfileScreen() {
                   {diversity.totalAlbums > 0 ? (
                     <View style={styles.mapSection}>
                       <Text style={styles.sectionLabel}>
-                        Origem dos artistas · {countriesCount}{' '}
+                        Origem dos artistas ouvidos · {countriesCount}{' '}
                         {countriesCount === 1 ? 'país' : 'países'}
                       </Text>
                       <WorldMap
@@ -268,7 +269,6 @@ export default function ProfileScreen() {
                   ) : null}
                 </>
               ) : null}
-
               {user && user.favoriteGenres.length > 0 ? (
                 <View style={styles.genresSection}>
                   <Text style={styles.sectionLabel}>Gêneros favoritos</Text>
@@ -283,45 +283,11 @@ export default function ProfileScreen() {
               ) : null}
             </View>
           }
-          renderItem={({ item }) => (
-            <View style={styles.reviewCard}>
-              <Pressable style={styles.reviewMain} onPress={() => openAlbum(item)}>
-                <Image
-                  source={item.albumArtworkUrl ?? undefined}
-                  style={styles.cover}
-                  contentFit="cover"
-                  transition={150}
-                />
-                <View style={styles.reviewInfo}>
-                  <Text style={styles.albumTitle} numberOfLines={1}>
-                    {item.albumTitle}
-                  </Text>
-                  <Text style={styles.albumArtist} numberOfLines={1}>
-                    {item.albumArtist}
-                  </Text>
-                  <View style={styles.reviewFooter}>
-                    <StarRating rating={item.rating} size={13} readOnly />
-                    <Text style={styles.listenedAt}>
-                      Ouvido em {formatListenedAt(item.listenedAt)}
-                    </Text>
-                  </View>
-                  {item.reviewText ? (
-                    <Text style={styles.reviewText} numberOfLines={2}>
-                      {item.reviewText}
-                    </Text>
-                  ) : null}
-                </View>
-              </Pressable>
-              <Pressable style={styles.deleteButton} onPress={() => handleDelete(item)} hitSlop={8}>
-                <Ionicons name="trash-outline" size={18} color={colors.accent} />
-              </Pressable>
-            </View>
-          )}
           contentContainerStyle={styles.list}
           ListFooterComponent={
             reviews.length > 0 ? (
               <View style={styles.coversSection}>
-                <Text style={styles.sectionLabel}>Últimas capas</Text>
+                <Text style={styles.sectionLabel}>Últimas avaliações</Text>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -349,11 +315,6 @@ export default function ProfileScreen() {
           }
         />
       )}
-
-      <Pressable style={styles.logoutButton} onPress={handleLogout}>
-        <Ionicons name="log-out-outline" size={18} color={colors.accent} />
-        <Text style={styles.logoutText}>Sair da conta</Text>
-      </Pressable>
 
       <Modal
         visible={settingsOpen}
@@ -401,13 +362,13 @@ export default function ProfileScreen() {
               style={styles.settingsRow}
               onPress={() => {
                 setSettingsOpen(false)
-                router.push('/appearance')
+                handleLogout()
               }}
             >
-              <Ionicons name="color-palette-outline" size={20} color={colors.text} />
+              <Ionicons name="log-out-outline" size={20} color={colors.accent} />
               <View style={styles.settingsBody}>
-                <Text style={styles.settingsRowTitle}>Aparência</Text>
-                <Text style={styles.settingsRowSubtitle}>Tema e visual do app</Text>
+                <Text style={styles.settingsRowTitle}>Sair da conta</Text>
+                <Text style={styles.settingsRowSubtitle}>Encerrar sessão atual</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </Pressable>
@@ -496,14 +457,14 @@ const createStyles = (colors: ThemeTokens) =>
     },
     statLabel: {
       fontFamily: fonts.kicker,
-      fontSize: 8,
+      fontSize: 10,
       letterSpacing: 1,
       textTransform: 'uppercase',
       color: colors.textMuted,
     },
     sectionLabel: {
       fontFamily: fonts.kicker,
-      fontSize: 10,
+      fontSize: 12,
       letterSpacing: 1.4,
       textTransform: 'uppercase',
       color: colors.textMuted,
@@ -512,7 +473,7 @@ const createStyles = (colors: ThemeTokens) =>
       borderBottomColor: colors.border,
     },
     mapSection: {
-      gap: spacing.sm,
+      gap: spacing.xs,
     },
     genresSection: {
       gap: spacing.sm,
@@ -545,9 +506,9 @@ const createStyles = (colors: ThemeTokens) =>
       gap: spacing.sm,
     },
     listHeader: {
-      gap: spacing.lg,
-      paddingBottom: spacing.sm,
-      marginTop: spacing.sm,
+      gap: spacing.xs,
+      paddingBottom: 0,
+      marginTop: 0,
     },
     reviewCard: {
       flexDirection: 'row',
@@ -602,8 +563,8 @@ const createStyles = (colors: ThemeTokens) =>
       padding: spacing.sm,
     },
     coversSection: {
-      gap: spacing.sm,
-      marginTop: spacing.md,
+      gap: spacing.xs,
+      marginTop: 0,
     },
     coversRow: {
       gap: spacing.sm,
