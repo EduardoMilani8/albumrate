@@ -2,7 +2,7 @@
 
 Aplicativo para registrar, avaliar e acompanhar álbuns. Busca de álbuns via API do Spotify, avaliação em estrelas (com meio-ponto), resenha, data em que ouviu, **avaliação opcional de mídia física** (qualidade da prensagem, condição), **coleção física** (inventário separado das reviews), **diário de escuta** e perfil. Conta com **backend próprio** para usuários e avaliações e **login com Spotify** (OAuth 2.0 + PKCE) com importação opcional de dados.
 
-Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, em tema escuro padrão com **5 temas selecionáveis** (Claro, Escuro, Midnight, Vinil Sépia e Contraste Neon), + **Node/Express + Postgres (Drizzle)** no `server/`.
+Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, com **5 temas selecionáveis** (Claro, Escuro, Midnight, Vinil Sépia e Contraste Neon) numa **identidade visual editorial**: tipografia Cormorant Garamond (títulos) + Lora (corpo) + Courier Prime (kickers), accent dourado aplicado como traço/borda, cards outline com hairline e capas com passe-partout, + **Node/Express + Postgres (Drizzle)** no `server/`.
 
 ## Funcionalidades
 
@@ -40,6 +40,7 @@ Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, em tema escu
 | Autenticação | E-mail/senha (JWT) **ou** Spotify OAuth 2.0 (Authorization Code + PKCE, `expo-auth-session`) |
 | Imagens | expo-image |
 | Ícones | @expo/vector-icons (Ionicons, FontAwesome5) |
+| Tipografia | Cormorant Garamond (títulos) + Lora (corpo) + Courier Prime (kickers), via `expo-font` |
 | Busca | Spotify Web API (Client Credentials flow, via proxy no backend) |
 
 ## Como rodar
@@ -107,7 +108,7 @@ Verifique tipos antes de commitar: `npx tsc --noEmit` (app) e `cd server && npx 
 ```
 albumrate/
 ├── app/                    # rotas (expo-router)
-│   ├── _layout.tsx         # providers + Stack com rotas protegidas (login)
+│   ├── _layout.tsx         # providers + fontes (useFonts) + Stack com rotas protegidas (login)
 │   ├── index.tsx           # home: estatísticas, álbum do dia, abas Meus Álbuns/Atividade (feed), FAB
 │   ├── search.tsx          # busca: abas Álbuns (Spotify) e Pessoas (usuários)
 │   ├── album/[id].tsx      # detalhe: média, resenhas, avaliar, quero ouvir, ouvir hoje, adicionar a lista
@@ -136,7 +137,7 @@ albumrate/
 │   ├── DiversityChart.tsx  # donut de diversidade (react-native-svg) + legenda
 │   ├── WorldMap.tsx        # mapa-múndi de origens dos artistas (react-native-svg)
 ├── constants/
-│   ├── theme.ts            # tokens do tema padrão (dark): colors, spacing, radius
+│   ├── theme.ts            # tokens do tema padrão (dark): colors, spacing, radius (inclui xs), fonts (Cormorant/Lora/Courier)
 │   ├── themes.ts           # 5 temas predefinidos (Claro/Escuro/Midnight/Sépia/Neon) com todos os tokens de cor
 ├── lib/
 │   ├── api.ts              # cliente HTTP do backend
