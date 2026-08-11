@@ -237,9 +237,9 @@ export default function IndexScreen() {
 
       {renderAlbumOfMonth()}
 
-      <View style={styles.sectionHeader}>
+
         <Text style={styles.sectionLabel}>Meus Álbuns</Text>
-      </View>
+      <View style={styles.sectionHeader}></View>
     </View>
   )
 
