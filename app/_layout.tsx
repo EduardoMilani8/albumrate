@@ -75,7 +75,7 @@ function RootNavigator() {
           <Stack.Screen name="activity" options={{ title: 'Atividade' }} />
           <Stack.Screen name="search" options={{ title: 'Buscar' }} />
           <Stack.Screen name="album/[id]" options={{ headerShown: false }} />
-          <Stack.Screen name="diary" options={{ title: 'Meu Diário' }} />
+          <Stack.Screen name="diary" options={{ headerShown: false }} />
           <Stack.Screen name="collection" options={{ title: 'Minha Coleção' }} />
           <Stack.Screen name="lists" options={{ title: 'Minhas Listas' }} />
           <Stack.Screen name="list/[id]" options={{ title: '' }} />

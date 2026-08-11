@@ -1,6 +1,6 @@
 # Albumrate
 
-Aplicativo para registrar, avaliar e acompanhar álbuns. Busca de álbuns via API do Spotify, avaliação em estrelas (com meio-ponto), resenha, data em que ouviu, **avaliação opcional de mídia física** (qualidade da prensagem, condição), **coleção física** (inventário separado das reviews), **diário de escuta** e perfil. Conta com **backend próprio** para usuários e avaliações e **login com Spotify** (OAuth 2.0 + PKCE) com importação opcional de dados.
+Aplicativo para registrar, avaliar e acompanhar álbuns. Busca de álbuns via API do Spotify, avaliação em estrelas (com meio-ponto), resenha, data em que ouviu, **avaliação opcional de mídia física** (qualidade da prensagem, condição), **coleção física** (inventário separado das reviews), **diário** (avaliações agrupadas por mês) e perfil. Conta com **backend próprio** para usuários e avaliações e **login com Spotify** (OAuth 2.0 + PKCE) com importação opcional de dados.
 
 Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, com **5 temas selecionáveis** (Claro, Escuro, Midnight, Vinil Sépia e Contraste Neon) numa **identidade visual editorial**: tipografia Cormorant Garamond (títulos) + Lora (corpo) + Courier Prime (kickers), accent dourado aplicado como traço/borda, cards outline com hairline e capas com passe-partout, + **Node/Express + Postgres (Drizzle)** no `server/`.
 
@@ -13,11 +13,11 @@ Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, com **5 tema
 - **Coleção física** ("Minha coleção"): inventário separado das reviews — adicione álbuns que você possui (sem precisar tê-los avaliado), com tipo de mídia, edição/prensagem, condição, valor pago (opcional) e data de aquisição. Busca por nome, filtro por tipo de mídia, editar/remover itens. É possível ter mais de um item do mesmo álbum (ex.: 2 prensagens). Aparece como badge "Coleção" no perfil público (somente leitura, sem valor pago)
 - **1 avaliação por usuário por álbum** (reavaliar edita, não duplica)
 - **Nota média de todos os usuários** + lista de resenhas na página do álbum
-- **Diário de escuta**: botão "Marcar como ouvido hoje" na página do álbum + timeline "Meu Diário" agrupada por mês, com remoção de registros
+- **Diário**: timeline de **avaliações** agrupada por mês (mockup 1d) — cabeçalho com ano + contagem de registros, bloco de data à esquerda, capa com passe-partout, estrelas, indicador de resenha escrita e menu de opções (…) para excluir
 - **Listas temáticas de álbuns**: crie listas públicas ou privadas, adicione/remova/reordene álbuns (botões sobe/desce) e adicione um álbum a uma lista direto da sua página. A capa da lista é a do primeiro álbum
 - **Cadastro/login** com e-mail e senha (JWT, token salvo no `expo-secure-store`)
 - **Login com Spotify** (OAuth 2.0 Authorization Code + PKCE): botão na entrada e no cadastro, sem senha. Contas são vinculadas por e-mail quando há conflito (vincular / criar conta nova / cancelar); tokens do Spotify ficam criptografados no servidor
-- **Onboarding de importação** ao conectar: puxa foto/nome/país, top artistas, **gêneros favoritos** (até 5, mostrados no perfil), últimos álbuns ouvidos (→ diário de escuta) e biblioteca salva (→ lista "Importado do Spotify")
+- **Onboarding de importação** ao conectar: puxa foto/nome/país, top artistas, **gêneros favoritos** (até 5, mostrados no perfil), últimos álbuns ouvidos (→ histórico de escuta) e biblioteca salva (→ lista "Importado do Spotify")
 - **Perfil** com suas avaliações (mais recentes primeiro), avatar do Spotify, gêneros favoritos, card de conexão (conectar/reconectar/desconectar) e logout
 - **Índice de diversidade musical** no perfil: score 0–100 (entropia de Shannon normalizada sobre a distribuição de gêneros), gráfico donut de gêneros e distribuições por década e país do artista
 - **Mapa-múndi de origens** no perfil: mostra de quais países vêm os artistas que você ouviu (intensidade de cor = nº de álbuns, toque/hover para detalhes). Países faltantes são resolvidos em background via **MusicBrainz** (cache no backend)
@@ -113,7 +113,7 @@ albumrate/
 │   ├── activity.tsx        # Atividade: feed social de quem você segue + BottomNav
 │   ├── search.tsx          # busca: abas Álbuns (Spotify) e Pessoas (usuários) + BottomNav (modo "adicionar à lista" não mostra a barra)
 │   ├── album/[id].tsx      # detalhe: hero full-bleed (gradiente + compartilhar), média, avaliar, streaming, adicionar à lista, "Y NA COLEÇÃO", resenhas
-│   ├── diary.tsx           # Meu Diário: timeline de escutas agrupada por mês
+│   ├── diary.tsx           # Diário: avaliações agrupadas por mês (mockup 1d)
 │   ├── collection.tsx      # Minha coleção: lista com busca/filtro por mídia, FAB de adicionar (userId = visão pública)
 │   ├── lists.tsx           # Minhas listas: criar/abrir listas temáticas
 │   ├── list/[id].tsx       # detalhe da lista: adicionar, remover, reordenar álbuns (somente leitura se não for sua)

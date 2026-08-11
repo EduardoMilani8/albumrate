@@ -20,6 +20,7 @@ import type {
   ListAlbum,
   MediaCondition,
   MediaType,
+  MonthlyReviewsResponse,
   MyReviewsResponse,
   PublicCollectionItem,
   Review,
@@ -222,6 +223,12 @@ export const api = {
 
   myReviews() {
     return request<MyReviewsResponse>('/api/me/reviews')
+  },
+
+  monthlyReviews(before?: string) {
+    return request<MonthlyReviewsResponse>(
+      `/api/me/reviews/monthly${before ? `?before=${encodeURIComponent(before)}` : ''}`,
+    )
   },
 
   createListeningLog(payload: {

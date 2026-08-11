@@ -47,6 +47,7 @@ Tudo sob `/api`. Rotas de reviews exigem `Authorization: Bearer <token>`.
 | `DELETE` | `/albums/:albumId/reviews/me` | Remove a avaliação do usuário |
 | `GET` | `/albums/:albumId/reviews` | Nota média, total e lista de resenhas do álbum (+ `myReview`) |
 | `GET` | `/me/reviews` | Avaliações do usuário logado, mais recentes primeiro |
+| `GET` | `/me/reviews/monthly` | Diário: avaliações agrupadas por mês (paginado por `before`=AAAA-MM + `limit`; devolve `total` e `latestYear`) |
 | `GET` | `/users/:id/diversity-score` | Índice de diversidade musical (entropia de Shannon normalizada 0–100) + distribuições por gênero, década e país do artista |
 | `POST` | `/me/countries/backfill` | Resolve países de origem faltantes (cache `artists` + MusicBrainz, ~13s/chamada, re-invocar até completar) → `{resolved, remaining, total}` |
 | `POST` | `/auth/spotify/begin` | Inicia o login com Spotify → `{state}` (anti-CSRF, expira em 10 min) |

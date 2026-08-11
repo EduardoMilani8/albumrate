@@ -110,6 +110,13 @@ export interface MyReviewsResponse {
   reviews: Review[]
 }
 
+export interface MonthlyReviewsResponse {
+  months: { yearMonth: string; reviews: Review[] }[]
+  nextBefore: string | null
+  total: number
+  latestYear: string | null
+}
+
 export interface ListeningLog {
   id: string
   albumId: string

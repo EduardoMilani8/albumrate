@@ -342,4 +342,64 @@ router.get('/me/reviews', async (req: AuthedRequest, res) => {
   res.json({ reviews: rows.map((row) => toReviewJson(row, mediaByReviewId.get(row.id))) })
 })
 
+const diaryQuerySchema = z.object({
+  before: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/, 'O parâmetro "before" deve estar no formato AAAA-MM.')
+    .optional(),
+  limit: z.coerce.number().int().min(1).max(36).optional(),
+})
+
+router.get('/me/reviews/monthly', async (req: AuthedRequest, res) => {
+  const parsed = diaryQuerySchema.safeParse(req.query)
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Parâmetros inválidos.' })
+    return
+  }
+
+  const { before, limit } = parsed.data
+  const userId = req.userId!
+
+  const rows = await db
+    .select()
+    .from(reviews)
+    .where(eq(reviews.userId, userId))
+    .orderBy(desc(reviews.listenedAt), desc(reviews.createdAt))
+
+  const filtered = before ? rows.filter((review) => review.listenedAt < `${before}-01`) : rows
+
+  const monthsMap = new Map<string, typeof rows>()
+  for (const review of filtered) {
+    const key = review.listenedAt.slice(0, 7)
+    const bucket = monthsMap.get(key)
+    if (bucket) bucket.push(review)
+    else monthsMap.set(key, [review])
+  }
+
+  const monthKeys = [...monthsMap.keys()].sort((a, b) => b.localeCompare(a))
+  const pageSize = limit ?? 12
+  const pageKeys = monthKeys.slice(0, pageSize)
+
+  const pageReviews = pageKeys.flatMap((key) => monthsMap.get(key) ?? [])
+  const mediaRows = pageReviews.length
+    ? await db
+        .select()
+        .from(mediaReviews)
+        .where(inArray(mediaReviews.reviewId, pageReviews.map((review) => review.id)))
+    : []
+  const mediaByReviewId = new Map(mediaRows.map((row) => [row.reviewId, row]))
+
+  res.json({
+    months: pageKeys.map((key) => ({
+      yearMonth: key,
+      reviews: (monthsMap.get(key) ?? []).map((review) =>
+        toReviewJson(review, mediaByReviewId.get(review.id)),
+      ),
+    })),
+    nextBefore: monthKeys.length > pageSize ? monthKeys[pageSize] : null,
+    total: rows.length,
+    latestYear: rows[0]?.listenedAt.slice(0, 4) ?? null,
+  })
+})
+
 export default router
