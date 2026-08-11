@@ -6,6 +6,7 @@ import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View }
 import StarRating from '../components/StarRating'
 import DiversityChart from '../components/DiversityChart'
 import WorldMap from '../components/WorldMap'
+import BottomNav from '../components/BottomNav'
 import { radius, spacing } from '../constants/theme'
 import type { ThemeTokens } from '../constants/themes'
 import { api } from '../lib/api'
@@ -361,6 +362,8 @@ export default function ProfileScreen() {
         <Ionicons name="log-out-outline" size={18} color={colors.accent} />
         <Text style={styles.logoutText}>Sair da conta</Text>
       </Pressable>
+
+      <BottomNav />
     </View>
   )
 }
@@ -551,6 +554,7 @@ const createStyles = (colors: ThemeTokens) =>
   },
   list: {
     padding: spacing.md,
+    paddingBottom: 104,
     gap: spacing.sm,
   },
   listHeader: {
@@ -623,6 +627,7 @@ const createStyles = (colors: ThemeTokens) =>
     gap: spacing.sm,
     height: 48,
     margin: spacing.md,
+    marginBottom: 88,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,

@@ -1,14 +1,12 @@
 import { CormorantGaramond_400Regular, CormorantGaramond_600SemiBold } from '@expo-google-fonts/cormorant-garamond'
 import { CourierPrime_400Regular, CourierPrime_700Bold } from '@expo-google-fonts/courier-prime'
 import { Lora_400Regular, Lora_400Regular_Italic, Lora_500Medium, Lora_600SemiBold } from '@expo-google-fonts/lora'
-import { Ionicons } from '@expo/vector-icons'
 import { useFonts } from 'expo-font'
-import { router, Stack } from 'expo-router'
+import { Stack } from 'expo-router'
 import { SQLiteProvider } from 'expo-sqlite'
 import { StatusBar } from 'expo-status-bar'
-import { ActivityIndicator, Pressable, View } from 'react-native'
+import { ActivityIndicator, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
-import { spacing } from '../constants/theme'
 import { AuthProvider, useAuth } from '../lib/auth'
 import { initDb } from '../lib/db'
 import { ThemeProvider, useTheme } from '../lib/theme'
@@ -73,25 +71,9 @@ function RootNavigator() {
         }}
       >
         <Stack.Protected guard={!!user}>
-          <Stack.Screen
-            name="index"
-            options={{
-              title: 'Meus Álbuns',
-              headerRight: () => (
-                <Pressable
-                  onPress={() => router.push('/profile')}
-                  hitSlop={8}
-                  style={{ marginRight: spacing.xs }}
-                >
-                  <Ionicons name="person-circle-outline" size={26} color={colors.text} />
-                </Pressable>
-              ),
-            }}
-          />
-          <Stack.Screen
-            name="search"
-            options={{ title: 'Buscar Álbum', presentation: 'modal' }}
-          />
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="activity" options={{ title: 'Atividade' }} />
+          <Stack.Screen name="search" options={{ title: 'Buscar' }} />
           <Stack.Screen name="album/[id]" options={{ title: '' }} />
           <Stack.Screen name="diary" options={{ title: 'Meu Diário' }} />
           <Stack.Screen name="collection" options={{ title: 'Minha Coleção' }} />

@@ -12,6 +12,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import BottomNav from '../components/BottomNav'
 import CollectionFormModal from '../components/CollectionFormModal'
 import { radius, spacing } from '../constants/theme'
 import type { ThemeTokens } from '../constants/themes'
@@ -298,6 +299,8 @@ export default function CollectionScreen() {
         </Pressable>
       ) : null}
 
+      {isOwn ? <BottomNav /> : null}
+
       <CollectionFormModal
         visible={formVisible}
         item={editingItem}
@@ -326,6 +329,7 @@ const createStyles = (colors: ThemeTokens) =>
   },
   list: {
     padding: spacing.md,
+    paddingBottom: 104,
     gap: spacing.sm,
   },
   header: {
@@ -453,7 +457,7 @@ const createStyles = (colors: ThemeTokens) =>
   fab: {
     position: 'absolute',
     right: spacing.lg,
-    bottom: spacing.lg,
+    bottom: 96,
     width: 56,
     height: 56,
     borderRadius: 28,

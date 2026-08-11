@@ -18,6 +18,7 @@ import { api } from '../lib/api'
 import { searchAlbums } from '../lib/spotify'
 import { useTheme } from '../lib/theme'
 import type { SpotifyAlbumResult, UserSearchResult } from '../lib/types'
+import BottomNav from '../components/BottomNav'
 
 type SearchTab = 'albums' | 'users'
 
@@ -299,6 +300,7 @@ export default function SearchScreen() {
           keyboardShouldPersistTaps="handled"
         />
       )}
+      {!listId ? <BottomNav /> : null}
     </View>
   )
 }
@@ -357,7 +359,7 @@ const createStyles = (colors: ThemeTokens) =>
   },
   list: {
     paddingHorizontal: spacing.md,
-    paddingBottom: spacing.lg,
+    paddingBottom: 96,
   },
   row: {
     flexDirection: 'row',
