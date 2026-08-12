@@ -65,7 +65,7 @@ const reorderSchema = z.object({
 
 function toListJson(
   list: AlbumList,
-  extra: { albumCount: number; coverArtworkUrl: string | null; isOwner?: boolean },
+  extra: { albumCount: number; coverArtworkUrl: string | null; covers?: (string | null)[]; isOwner?: boolean },
 ) {
   return {
     id: list.id,
@@ -77,6 +77,7 @@ function toListJson(
     updatedAt: list.updatedAt.toISOString(),
     albumCount: extra.albumCount,
     coverArtworkUrl: extra.coverArtworkUrl,
+    covers: extra.covers ?? [],
   }
 }
 
@@ -127,6 +128,7 @@ router.get('/me/lists', async (req: AuthedRequest, res) => {
 
   const listIds = rows.map((list) => list.id)
   const firstAlbumByList = new Map<string, string | null>()
+  const coversByList = new Map<string, (string | null)[]>()
   const countByList = new Map<string, number>()
 
   if (listIds.length > 0) {
@@ -144,6 +146,12 @@ router.get('/me/lists', async (req: AuthedRequest, res) => {
       if (!firstAlbumByList.has(row.listId)) {
         firstAlbumByList.set(row.listId, row.albumArtworkUrl)
       }
+      const covers = coversByList.get(row.listId)
+      if (!covers) {
+        coversByList.set(row.listId, [row.albumArtworkUrl])
+      } else if (covers.length < 4) {
+        covers.push(row.albumArtworkUrl)
+      }
     }
   }
 
@@ -152,6 +160,7 @@ router.get('/me/lists', async (req: AuthedRequest, res) => {
       toListJson(list, {
         albumCount: countByList.get(list.id) ?? 0,
         coverArtworkUrl: firstAlbumByList.get(list.id) ?? null,
+        covers: coversByList.get(list.id) ?? [],
       }),
     ),
   })
@@ -180,7 +189,7 @@ router.get('/me/lists/:id', async (req: AuthedRequest, res) => {
     .where(eq(listAlbums.listId, list.id))
     .orderBy(asc(listAlbums.position))
 
-  res.json({ list: toListJson(list, { albumCount: albums.length, coverArtworkUrl: albums[0]?.albumArtworkUrl ?? null }), albums: albums.map(toAlbumJson) })
+  res.json({ list: toListJson(list, { albumCount: albums.length, coverArtworkUrl: albums[0]?.albumArtworkUrl ?? null, covers: albums.slice(0, 4).map((album) => album.albumArtworkUrl) }), albums: albums.map(toAlbumJson) })
 })
 
 router.get('/lists/:id', async (req: AuthedRequest, res) => {
@@ -202,7 +211,7 @@ router.get('/lists/:id', async (req: AuthedRequest, res) => {
     .where(eq(listAlbums.listId, list.id))
     .orderBy(asc(listAlbums.position))
 
-  res.json({ list: toListJson(list, { albumCount: albums.length, coverArtworkUrl: albums[0]?.albumArtworkUrl ?? null, isOwner: list.userId === req.userId }), albums: albums.map(toAlbumJson) })
+  res.json({ list: toListJson(list, { albumCount: albums.length, coverArtworkUrl: albums[0]?.albumArtworkUrl ?? null, covers: albums.slice(0, 4).map((album) => album.albumArtworkUrl), isOwner: list.userId === req.userId }), albums: albums.map(toAlbumJson) })
 })
 
 router.patch('/me/lists/:id', async (req: AuthedRequest, res) => {
@@ -234,7 +243,19 @@ router.patch('/me/lists/:id', async (req: AuthedRequest, res) => {
     res.status(404).json({ error: 'Lista não encontrada.' })
     return
   }
-  res.json({ list: toListJson(list, { albumCount: 0, coverArtworkUrl: null }) })
+  const listAlbumsForCover = await db
+    .select({ albumArtworkUrl: listAlbums.albumArtworkUrl })
+    .from(listAlbums)
+    .where(eq(listAlbums.listId, list.id))
+    .orderBy(asc(listAlbums.position))
+    .limit(4)
+  res.json({
+    list: toListJson(list, {
+      albumCount: listAlbumsForCover.length,
+      coverArtworkUrl: listAlbumsForCover[0]?.albumArtworkUrl ?? null,
+      covers: listAlbumsForCover.map((row) => row.albumArtworkUrl),
+    }),
+  })
 })
 
 router.delete('/me/lists/:id', async (req: AuthedRequest, res) => {

@@ -147,6 +147,7 @@ export interface AlbumListSummary {
   updatedAt: string
   albumCount: number
   coverArtworkUrl: string | null
+  covers: (string | null)[]
 }
 
 export interface ListAlbum {
