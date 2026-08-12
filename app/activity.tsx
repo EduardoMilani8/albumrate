@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { router, useFocusEffect } from 'expo-router'
 import { useCallback, useMemo, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import BottomNav from '../components/BottomNav'
 import FeedItem from '../components/FeedItem'
 import { fonts, radius, spacing } from '../constants/theme'
@@ -12,6 +13,7 @@ import type { FeedItem as FeedItemType } from '../lib/types'
 
 export default function ActivityScreen() {
   const { colors } = useTheme()
+  const insets = useSafeAreaInsets()
   const styles = useMemo(() => createStyles(colors), [colors])
   const [feedItems, setFeedItems] = useState<FeedItemType[]>([])
   const [feedLoading, setFeedLoading] = useState(true)
@@ -62,6 +64,12 @@ export default function ActivityScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
+        <View style={styles.headerRow}>
+          <Text style={styles.headerTitle}>Atividade</Text>
+        </View>
+      </View>
+
       {feedLoading ? (
         <ActivityIndicator color={colors.accent} style={styles.loading} />
       ) : (
@@ -104,6 +112,21 @@ const createStyles = (colors: ThemeTokens) =>
     container: {
       flex: 1,
       backgroundColor: colors.background,
+    },
+    header: {
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.md,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: spacing.sm,
+    },
+    headerTitle: {
+      fontFamily: fonts.headingRegular,
+      fontSize: 32,
+      lineHeight: 32,
+      color: colors.text,
     },
     feedList: {
       padding: spacing.md,

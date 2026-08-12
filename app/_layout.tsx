@@ -72,7 +72,7 @@ function RootNavigator() {
       >
         <Stack.Protected guard={!!user}>
           <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="activity" options={{ title: 'Atividade' }} />
+          <Stack.Screen name="activity" options={{ title: 'Atividade', headerShown: false }} />
           <Stack.Screen name="search" options={{ title: 'Buscar' }} />
           <Stack.Screen name="album/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="diary" options={{ headerShown: false }} />
