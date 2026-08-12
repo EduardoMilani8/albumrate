@@ -187,7 +187,7 @@ export default function ProfileScreen() {
     : '@USUÁRIO'
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {loading ? (
         <ActivityIndicator color={colors.accent} style={styles.loading} />
       ) : (
@@ -207,7 +207,7 @@ export default function ProfileScreen() {
                 </View>
 
                 <View style={styles.headerInfo}>
-                  <Text style={styles.name} numberOfLines={2}>
+                  <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">
                     {user?.name ?? 'Sem nome'}
                   </Text>
                   <Text style={styles.handle} numberOfLines={1}>
@@ -391,7 +391,7 @@ const createStyles = (colors: ThemeTokens) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.lg,
-      paddingHorizontal: spacing.lg,
+      paddingHorizontal: 10,
       paddingVertical: spacing.md,
     },
     avatar: {
@@ -416,11 +416,11 @@ const createStyles = (colors: ThemeTokens) =>
     },
     headerInfo: {
       flex: 1,
-      gap: spacing.sm,
+      gap: spacing.xs,
     },
     name: {
       fontFamily: fonts.heading,
-      fontSize: 28,
+      fontSize: 22,
       color: colors.text,
     },
     handle: {

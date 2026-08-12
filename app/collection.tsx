@@ -219,11 +219,6 @@ export default function CollectionScreen() {
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
         <View style={styles.headerRow}>
-          {canGoBack ? (
-            <Pressable onPress={() => router.back()} hitSlop={8}>
-              <Ionicons name="chevron-back" size={26} color={colors.text} />
-            </Pressable>
-          ) : null}
           <Text style={styles.headerTitle}>{isOwn ? 'Minha coleção' : 'Coleção'}</Text>
         </View>
       </View>
@@ -389,6 +384,7 @@ const createStyles = (colors: ThemeTokens) =>
     },
     stat: {
       flex: 1,
+      paddingLeft: 14,
     },
     statPadded: {
       paddingLeft: 14,

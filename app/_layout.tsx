@@ -76,7 +76,7 @@ function RootNavigator() {
           <Stack.Screen name="search" options={{ title: 'Buscar' }} />
           <Stack.Screen name="album/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="diary" options={{ headerShown: false }} />
-          <Stack.Screen name="collection" options={{ title: 'Minha Coleção' }} />
+          <Stack.Screen name="collection" options={{ title: 'Minha Coleção', headerShown: false }} />
           <Stack.Screen name="lists" options={{ title: 'Minhas Listas' }} />
           <Stack.Screen name="list/[id]" options={{ title: '' }} />
           <Stack.Screen name="album-of-month" options={{ title: 'Álbum do Mês' }} />
@@ -84,7 +84,7 @@ function RootNavigator() {
             name="album-of-month-history"
             options={{ title: 'Histórico do Álbum do Mês' }}
           />
-          <Stack.Screen name="profile" options={{ title: 'Perfil' }} />
+          <Stack.Screen name="profile" options={{ title: 'Perfil', headerShown: false }} />
           <Stack.Screen name="appearance" options={{ title: 'Aparência' }} />
           <Stack.Screen name="user/[id]" options={{ title: '' }} />
           <Stack.Screen name="spotify-onboarding" options={{ headerShown: false }} />
