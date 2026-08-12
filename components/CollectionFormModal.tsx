@@ -24,7 +24,7 @@ import { useTheme } from '../lib/theme'
 const MEDIA_OPTIONS = [
   { value: 'vinil', label: 'Vinil' },
   { value: 'cd', label: 'CD' },
-  { value: 'cassete', label: 'Cassete' },
+  { value: 'cassete', label: 'Fita cassete' },
   { value: 'digital', label: 'Digital' },
 ] as const
 

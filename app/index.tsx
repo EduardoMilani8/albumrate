@@ -237,7 +237,7 @@ export default function IndexScreen() {
 
       {renderAlbumOfMonth()}
 
-      <Text style={[styles.sectionLabel, { marginTop: 24 } ,{ marginBottom: -10 }]}>Meus Álbuns</Text>
+      <Text style={[styles.sectionLabel, { marginTop: 24 } ,{ marginBottom: -10 }]}>Meus Álbuns Avaliados</Text>
       <View style={styles.sectionHeader}></View>
     </View>
   )

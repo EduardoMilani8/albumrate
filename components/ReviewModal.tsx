@@ -29,7 +29,7 @@ import StarRating from './StarRating'
 const MEDIA_OPTIONS: { value: MediaType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { value: 'vinil', label: 'Vinil', icon: 'disc-outline' },
   { value: 'cd', label: 'CD', icon: 'disc' },
-  { value: 'cassete', label: 'Fita', icon: 'albums-outline' },
+  { value: 'cassete', label: 'Fita cassete', icon: 'albums-outline' },
   { value: 'digital', label: 'Digital', icon: 'cloud-outline' },
 ]
 

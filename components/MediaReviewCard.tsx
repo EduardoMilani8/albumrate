@@ -10,7 +10,7 @@ import StarRating from './StarRating'
 const MEDIA_LABELS: Record<MediaType, string> = {
   vinil: 'Vinil',
   cd: 'CD',
-  cassete: 'Cassete',
+  cassete: 'Fita cassete',
   digital: 'Digital',
 }
 
