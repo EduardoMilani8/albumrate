@@ -14,7 +14,7 @@ Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, com **5 tema
 - **1 avaliação por usuário por álbum** (reavaliar edita, não duplica)
 - **Nota média de todos os usuários** + lista de resenhas na página do álbum
 - **Diário**: timeline de **avaliações** agrupada por mês (mockup 1d) — cabeçalho com ano + contagem de registros, bloco de data à esquerda, capa com passe-partout, estrelas, indicador de resenha escrita e menu de opções (…) para excluir
-- **Listas temáticas de álbuns**: crie listas públicas ou privadas, adicione/remova/reordene álbuns (botões sobe/desce) e adicione um álbum a uma lista direto da sua página. A capa da lista é a do primeiro álbum
+- **Listas temáticas de álbuns**: crie listas públicas ou privadas, adicione/remova/reordene álbuns (botões sobe/desce) e adicione um álbum a uma lista direto da sua página. A tela de listas mostra uma grade de colagens 2x2 com as 4 primeiras capas de cada lista; a capa do detalhe é a do primeiro álbum
 - **Cadastro/login** com e-mail e senha (JWT, token salvo no `expo-secure-store`)
 - **Login com Spotify** (OAuth 2.0 Authorization Code + PKCE): botão na entrada e no cadastro, sem senha. Contas são vinculadas por e-mail quando há conflito (vincular / criar conta nova / cancelar); tokens do Spotify ficam criptografados no servidor
 - **Onboarding de importação** ao conectar: puxa foto/nome/país, top artistas, **gêneros favoritos** (até 5, mostrados no perfil), últimos álbuns ouvidos (→ histórico de escuta) e biblioteca salva (→ lista "Importado do Spotify")
@@ -115,7 +115,7 @@ albumrate/
 │   ├── album/[id].tsx      # detalhe: hero full-bleed (gradiente + compartilhar), média, avaliar, streaming, adicionar à lista, "Y NA COLEÇÃO", resenhas
 │   ├── diary.tsx           # Diário: avaliações agrupadas por mês (mockup 1d)
 │   ├── collection.tsx      # Minha coleção: lista com busca/filtro por mídia, FAB de adicionar (userId = visão pública)
-│   ├── lists.tsx           # Minhas listas: criar/abrir listas temáticas
+│   ├── lists.tsx           # Listas (mockup 1g): grade 2 colunas com colagem 2x2, criar/abrir listas
 │   ├── list/[id].tsx       # detalhe da lista: adicionar, remover, reordenar álbuns (somente leitura se não for sua)
 │   ├── album-of-month.tsx  # álbum do mês: votação (3 álbuns), resultado, discussão em comentários
 │   ├── album-of-month-history.tsx # histórico com o pódio (top 3) de cada mês (navegável)
