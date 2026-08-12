@@ -8,6 +8,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -19,11 +20,15 @@ import { useTheme } from '../lib/theme'
 import type { AlbumListSummary } from '../lib/types'
 
 const COLLAGE_CELLS = 4
+const LIST_H_PADDING = 20
+const COLUMN_GAP = 13
 
 export default function ListsScreen() {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
-  const styles = useMemo(() => createStyles(colors), [colors])
+  const { width } = useWindowDimensions()
+  const cardWidth = (width - LIST_H_PADDING * 2 - COLUMN_GAP) / 2
+  const styles = useMemo(() => createStyles(colors, cardWidth), [colors, cardWidth])
   const [lists, setLists] = useState<AlbumListSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [createVisible, setCreateVisible] = useState(false)
@@ -71,7 +76,14 @@ export default function ListsScreen() {
           data={lists}
           keyExtractor={(item) => item.id}
           numColumns={2}
-          renderItem={({ item }) => <ListCard item={item} onPress={() => router.push(`/list/${item.id}`)} />}
+          columnWrapperStyle={styles.columnWrapper}
+          renderItem={({ item }) => (
+            <ListCard
+              item={item}
+              width={cardWidth}
+              onPress={() => router.push(`/list/${item.id}`)}
+            />
+          )}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <View style={styles.empty}>
@@ -95,9 +107,17 @@ export default function ListsScreen() {
   )
 }
 
-function ListCard({ item, onPress }: { item: AlbumListSummary; onPress: () => void }) {
+function ListCard({
+  item,
+  width,
+  onPress,
+}: {
+  item: AlbumListSummary
+  width: number
+  onPress: () => void
+}) {
   const { colors } = useTheme()
-  const styles = useMemo(() => createStyles(colors), [colors])
+  const styles = useMemo(() => createStyles(colors, width), [colors, width])
 
   const covers = useMemo(() => {
     const cells = [...(item.covers ?? [])]
@@ -145,7 +165,7 @@ function ListCard({ item, onPress }: { item: AlbumListSummary; onPress: () => vo
   )
 }
 
-const createStyles = (colors: ThemeTokens) =>
+const createStyles = (colors: ThemeTokens, cardWidth: number) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -188,10 +208,12 @@ const createStyles = (colors: ThemeTokens) =>
       paddingTop: 15,
       paddingBottom: spacing.xl,
       rowGap: 16,
-      columnGap: 13,
+    },
+    columnWrapper: {
+      gap: COLUMN_GAP,
     },
     card: {
-      width: '100%',
+      width: cardWidth,
     },
     collageFrame: {
       width: '100%',
