@@ -1,8 +1,39 @@
 # Albumrate
 
-Aplicativo para registrar, avaliar e acompanhar álbuns. Busca de álbuns via API do Spotify, avaliação em estrelas (com meio-ponto), resenha, data em que ouviu, **avaliação opcional de mídia física** (qualidade da prensagem, condição), **coleção física** (inventário separado das reviews), **diário** (avaliações agrupadas por mês) e perfil. Conta com **backend próprio** para usuários e avaliações e **login com Spotify** (OAuth 2.0 + PKCE) com importação opcional de dados.
+![Expo SDK 57](https://img.shields.io/badge/Expo-SDK%2057-000020?logo=expo&logoColor=white)
+![React Native 0.86](https://img.shields.io/badge/React%20Native-0.86-61DAFB?logo=react&logoColor=black)
+![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![Node 22 + Express 5](https://img.shields.io/badge/Node%2022-Express%205-339933?logo=nodedotjs&logoColor=white)
+![Postgres + Drizzle](https://img.shields.io/badge/Postgres-Drizzle-4169E1?logo=postgresql&logoColor=white)
+![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
-Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, com **5 temas selecionáveis** (Claro, Escuro, Midnight, Vinil Sépia e Contraste Neon) numa **identidade visual editorial**: tipografia Cormorant Garamond (títulos) + Lora (corpo) + Courier Prime (kickers), accent dourado aplicado como traço/borda, cards outline com hairline e capas com passe-partout, + **Node/Express + Postgres (Drizzle)** no `server/`.
+**Um diário de álbuns para quem ouve disco inteiro.** Busque no Spotify, dê nota em estrelas (com meio-ponto), escreva a resenha, registre a prensagem que você tem na estante e veja o que seus amigos andam ouvindo.
+
+App mobile em **Expo + React Native** com **backend próprio** (Node/Express + Postgres) e **login com Spotify** (OAuth 2.0 + PKCE).
+
+> **Status (out/2026):** em desenvolvimento ativo, testado no Expo Go. **Não há backend público no ar** no momento — o deploy antigo no Railway foi desativado. Para usar, suba o `server/` você mesmo (local + um Postgres, ex.: [Neon](https://neon.tech) free). Veja [Como rodar](#como-rodar).
+
+## Destaques
+
+| | |
+| --- | --- |
+| ⭐ **Avaliações** | Estrelas de 0,5 a 5, resenha, data ouvida e nota média da comunidade por álbum |
+| 💿 **Mídia física** | Avaliação da prensagem (vinil/CD/cassete) e inventário da coleção com valor pago |
+| 📖 **Diário e listas** | Avaliações por mês, listas temáticas públicas ou privadas |
+| 🌍 **Diversidade** | Score de 0–100 por gêneros e mapa-múndi da origem dos artistas |
+| 🎲 **Descoberta** | Álbum aleatório do dia e álbum do mês por votação da comunidade |
+| 👥 **Social** | Seguir pessoas, perfis públicos e feed de atividade |
+| 🎨 **5 temas** | Claro, Escuro, Midnight, Vinil Sépia e Contraste Neon, em identidade visual editorial |
+
+## Sumário
+
+- [Funcionalidades](#funcionalidades)
+- [Stack](#stack)
+- [Como rodar](#como-rodar)
+- [Fluxo de desenvolvimento](#fluxo-de-desenvolvimento)
+- [Estrutura](#estrutura)
+- [Notas](#notas)
+- [Licença](#licença)
 
 ## Funcionalidades
 
@@ -45,25 +76,37 @@ Feito com **Expo SDK 57 + TypeScript + expo-router + expo-sqlite**, com **5 tema
 
 ## Como rodar
 
+Pré-requisitos: **Node 22+**, um **Postgres** acessível (ex.: [Neon](https://neon.tech) free), um app registrado no [painel do Spotify](https://developer.spotify.com/dashboard) e o **Expo Go** no celular.
+
 ### 1. Backend
 
-Veja `server/README.md` — a API precisa estar no ar (Railway, Render ou local) e o app apontar para ela.
+```sh
+cd server
+npm ci
+cp .env.example .env   # preencha DATABASE_URL, JWT_SECRET, SPOTIFY_* e TOKEN_ENCRYPTION_KEY
+npm run migrate        # aplica as migrações no banco do DATABASE_URL
+npm run dev            # sobe em http://localhost:8080
+```
 
-> Backend atual em produção: `https://albumrate-production.up.railway.app` (health: `/api/health`).
+Confira com `curl http://localhost:8080/api/health` → `{"ok":true}`. Detalhes de variáveis, rotas e deploy em [`server/README.md`](server/README.md).
+
+> No Neon, use a connection string **direct** (sem `-pooler`) com `?sslmode=require`.
 
 ### 2. App
 
 ```sh
-npm install
+npm ci
 ```
 
 Crie o arquivo `.env` na raiz (veja `.env.example`):
 
 ```sh
 EXPO_PUBLIC_SPOTIFY_CLIENT_ID=seu_client_id
-EXPO_PUBLIC_API_URL=https://albumrate-production.up.railway.app
+EXPO_PUBLIC_API_URL=http://IP-DA-SUA-MAQUINA:8080
 ```
 
+> **Testando no celular, não use `localhost`** — ele aponta para o próprio celular. Use o IP da máquina na rede local (celular e computador no mesmo Wi-Fi) e libere a porta 8080 no firewall, se houver. O `.env` só é lido ao iniciar o Metro: reinicie o `expo start` depois de editar.
+>
 > **A busca de álbuns usa um proxy no backend** (`GET /api/spotify/search`) — o Client Secret do Spotify fica **só no servidor** (`server/.env`), nunca no app. No login OAuth, o app envia apenas o Client ID.
 >
 > **Redirect URIs do login com Spotify** (cadastre no painel developer.spotify.com): em Expo Go use o `exp://...` exato que aparece no log `[spotify] redirect URI usada pelo app: ...` do terminal (`npx expo start`); no APK final, registre `albumrate://` (e variantes `albumrate:///`, `albumrate://--/`).
@@ -76,32 +119,22 @@ npx expo start
 
 Escaneie o QR code com o Expo Go (Android/iOS) ou pressione `w` para abrir no navegador.
 
-Verifique tipos com `npx tsc --noEmit`.
+## Fluxo de desenvolvimento
 
-## Fluxo de desenvolvimento (app + backend)
+**Mudanças só no app** (tela, componente, lógica do cliente): com o `npx expo start` rodando, as alterações aparecem em tempo real no Expo Go.
 
-O app roda localmente no Expo Go; o backend roda em produção no Railway. As duas partes são atualizadas de forma diferente:
+**Mudanças no `server/`** (rota, schema, migração): o `npm run dev` recarrega sozinho. Ao mudar o `src/schema.ts`, gere a migração com `npx drizzle-kit generate` e aplique com `npm run migrate`.
 
-**Mudanças só no app** (tela, componente, lógica do cliente):
-1. Rode `npx expo start` e escaneie o QR code no Expo Go.
-2. Veja as alterações em tempo real — **não precisa de deploy**.
+**Antes de commitar**, verifique os tipos nas duas pontas:
 
-**Mudanças no `server/`** (rota, schema, migração):
-1. Teste local (se possível): `cd server && cp .env.example .env && npm run migrate && npm run dev`.
-2. Faça o commit e o push para o `master`:
+```sh
+npx tsc --noEmit                 # app
+cd server && npx tsc --noEmit    # server
+```
 
-   ```sh
-   git add .
-   git commit -m "descrição em português"
-   git push
-   ```
+Commits em português, direto no `master`.
 
-3. O Railway **redeploya automaticamente** a cada push e aplica as migrações no boot (`node dist/migrate.js`).
-4. Rode `npx expo start` e escaneie o QR no Expo Go para testar a mudança no app.
-
-> Espere o deploy terminar no painel do Railway antes de testar uma mudança de backend — enquanto isso, o servidor em produção ainda responde com o código antigo (e pode rejeitar campos novos).
-
-Verifique tipos antes de commitar: `npx tsc --noEmit` (app) e `cd server && npx tsc --noEmit` (server).
+**Deploy:** o `server/` é um container (`server/Dockerfile`) que aplica as migrações no boot e roda em qualquer host que injete `DATABASE_URL` e `PORT` (Railway, Render, Fly etc.). Não há deploy ativo hoje.
 
 ## Estrutura
 
