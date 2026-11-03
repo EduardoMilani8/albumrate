@@ -5,8 +5,11 @@ import { useFonts } from 'expo-font'
 import { Stack } from 'expo-router'
 import { SQLiteProvider } from 'expo-sqlite'
 import { StatusBar } from 'expo-status-bar'
-import { ActivityIndicator, View } from 'react-native'
+import { useEffect, useState } from 'react'
+import { ActivityIndicator, Text, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { fonts } from '../constants/theme'
+import { onServerWaking } from '../lib/api'
 import { AuthProvider, useAuth } from '../lib/auth'
 import { initDb } from '../lib/db'
 import { ThemeProvider, useTheme } from '../lib/theme'
@@ -43,6 +46,9 @@ export default function RootLayout() {
 function RootNavigator() {
   const { user, initializing } = useAuth()
   const { colors, isDark } = useTheme()
+  const [serverWaking, setServerWaking] = useState(false)
+
+  useEffect(() => onServerWaking(setServerWaking), [])
 
   if (initializing) {
     return (
@@ -55,6 +61,19 @@ function RootNavigator() {
         }}
       >
         <ActivityIndicator color={colors.accent} />
+        {serverWaking ? (
+          <Text
+            style={{
+              marginTop: 16,
+              color: colors.textMuted,
+              fontFamily: fonts.body,
+              textAlign: 'center',
+              paddingHorizontal: 32,
+            }}
+          >
+            Acordando o servidor… pode levar até um minuto.
+          </Text>
+        ) : null}
       </View>
     )
   }

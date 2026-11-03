@@ -11,7 +11,7 @@
 
 App mobile em **Expo + React Native** com **backend próprio** (Node/Express + Postgres) e **login com Spotify** (OAuth 2.0 + PKCE).
 
-> **Status (out/2026):** em desenvolvimento ativo, testado no Expo Go. **Não há backend público no ar** no momento — o deploy antigo no Railway foi desativado. Para usar, suba o `server/` você mesmo (local + um Postgres, ex.: [Neon](https://neon.tech) free). Veja [Como rodar](#como-rodar).
+> **Status (nov/2026):** em desenvolvimento ativo, testado no Expo Go. Backend em produção no **Render** (free) com Postgres no **Neon** (free): `https://albumrate-server.onrender.com` (health: `/api/health`). No plano free o server dorme após 15 min sem uso e leva ~1 min para acordar — o app mostra "Acordando o servidor…" enquanto isso.
 
 ## Destaques
 
@@ -134,7 +134,7 @@ cd server && npx tsc --noEmit    # server
 
 Commits em português, direto no `master`.
 
-**Deploy:** o `server/` é um container (`server/Dockerfile`) que aplica as migrações no boot e roda em qualquer host que injete `DATABASE_URL` e `PORT` (Railway, Render, Fly etc.). Não há deploy ativo hoje.
+**Deploy:** o `server/` roda no **Render** via Blueprint (`render.yaml`): cada push no `master` gera um deploy novo, e o container (`server/Dockerfile`) aplica as migrações no boot. O banco fica no **Neon**. Espere o deploy terminar no painel do Render antes de testar uma mudança de backend pelo app.
 
 ## Estrutura
 

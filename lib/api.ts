@@ -35,7 +35,48 @@ import type {
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080'
 const REQUEST_TIMEOUT_MS = 20000
 
+// O plano free do Render dorme após 15 min sem requisições e leva ~1 min para
+// acordar. Antes de uma requisição, se o server pode estar dormindo, esperamos
+// o /api/health com um prazo maior — assim o timeout de 20s não estoura no cold start.
+const WAKE_TIMEOUT_MS = 90000
+const IDLE_SLEEP_MS = 14 * 60 * 1000
+
 let authToken: string | null = null
+let lastResponseAt = 0
+let waking: Promise<void> | null = null
+const wakeListeners = new Set<(isWaking: boolean) => void>()
+
+/** Avisa quando o app está esperando o servidor acordar (para mostrar na UI). */
+export function onServerWaking(listener: (isWaking: boolean) => void): () => void {
+  wakeListeners.add(listener)
+  return () => {
+    wakeListeners.delete(listener)
+  }
+}
+
+export function wakeServer(): Promise<void> {
+  if (Date.now() - lastResponseAt < IDLE_SLEEP_MS) return Promise.resolve()
+  if (!waking) {
+    waking = (async () => {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), WAKE_TIMEOUT_MS)
+      // Só avisa a UI se demorar: com o server acordado o health volta em ~200ms.
+      const notify = setTimeout(() => wakeListeners.forEach((l) => l(true)), 1500)
+      try {
+        await fetch(`${API_URL}/api/health`, { signal: controller.signal })
+        lastResponseAt = Date.now()
+      } catch {
+        // Sem conexão: a requisição real em seguida mostra o erro apropriado.
+      } finally {
+        clearTimeout(timeout)
+        clearTimeout(notify)
+        wakeListeners.forEach((l) => l(false))
+        waking = null
+      }
+    })()
+  }
+  return waking
+}
 
 export function setAuthToken(token: string | null): void {
   authToken = token
@@ -64,6 +105,7 @@ function logRequest(method: string, path: string, status: string, startedAt: num
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const method = options.method ?? 'GET'
+  await wakeServer()
   const startedAt = Date.now()
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
@@ -89,6 +131,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     clearTimeout(timeout)
   }
 
+  lastResponseAt = Date.now()
   logRequest(method, path, String(response.status), startedAt)
 
   if (response.status === 204) return undefined as T
