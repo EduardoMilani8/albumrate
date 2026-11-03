@@ -244,7 +244,7 @@ export default function DiaryScreen() {
                   <Text style={styles.loadMoreText}>Carregar mais</Text>
                 )}
               </Pressable>
-            ) : null
+            ) : undefined
           }
         />
       )}

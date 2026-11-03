@@ -305,7 +305,7 @@ export default function ProfileScreen() {
                   ))}
                 </ScrollView>
               </View>
-            ) : null
+            ) : undefined
           }
           ListEmptyComponent={
             <View style={styles.empty}>

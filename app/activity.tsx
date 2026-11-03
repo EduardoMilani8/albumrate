@@ -82,7 +82,7 @@ export default function ActivityScreen() {
           ListFooterComponent={
             feedLoadingMore ? (
               <ActivityIndicator color={colors.accent} style={styles.feedFooter} />
-            ) : null
+            ) : undefined
           }
           contentContainerStyle={styles.feedList}
           ListEmptyComponent={

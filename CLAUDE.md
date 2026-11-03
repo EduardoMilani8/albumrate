@@ -2,7 +2,7 @@
 
 ## Project
 
-- **Albumrate** — Expo SDK 57 (React Native 0.86, React 19) + TypeScript (strict) + expo-router + expo-sqlite.
+- **Albumrate** — Expo SDK 58 (React Native 0.88, React 19.3) + TypeScript (strict) + expo-router + expo-sqlite.
 - App de avaliação de álbuns: busca no Spotify, nota em estrelas (meio-ponto), resenha, data ouvida, perfil, persistência local em SQLite, tema dark. Inclui **avaliação opcional de mídia física** (vinil/CD/cassete/digital, qualidade da prensagem, condição), **coleção física** (inventário separado das reviews: álbum, tipo de mídia, edição, condição, valor pago e data de aquisição), **diário de escuta** (`listening_logs`, alimentado pela importação do Spotify e visível no feed) — a tela **Diário** (`app/diary.tsx`) lista as **avaliações por mês** (mockup 1d: cabeçalho com ano + contagem, bloco de data, capa com passe-partout, estrelas, indicador de resenha e menu `…` para excluir; fonte: `GET /api/me/reviews/monthly`) — e **listas temáticas de álbuns** (públicas/privadas, com reordenação). Login por e-mail/senha **ou Spotify (OAuth 2.0 + PKCE)** com onboarding de importação (avatar/país, top artistas, **gêneros favoritos**, ouvidos recentes → diário de escuta, biblioteca salva → lista "Importado do Spotify").
 - **Avaliações e usuários vivem num backend** (`server/`): Node/Express + Postgres (Drizzle) + JWT + bcrypt. O app autentica com e-mail/senha ou Spotify e busca reviews via API.
 - **Backend: FORA DO AR desde a verificação de 2026-10-04.** O deploy do Railway (`albumrate-production.up.railway.app`) responde `404 Application not found` (resposta do proxy do Railway, não do Express) — o trial venceu. Sem backend o app não passa do login. Ver "Retomando o projeto" e "Deploy" abaixo.
@@ -22,7 +22,7 @@
 - Último commit: 2026-08-12 (`master` = `origin/master`, working tree limpo). O trabalho em andamento era o **redesign das telas pelos mockups 1b–1g** (álbum, modal de avaliação, diário, perfil, coleção, listas, atividade).
 - Clone novo: **não há `node_modules`, `.env` nem `server/.env`**. Setup: `npm ci && (cd server && npm ci)`, depois criar os dois `.env` a partir dos `.env.example`.
 - Verificado nessa data: `npx tsc --noEmit` limpo no app e no server; `npm run build` do server ok.
-- `npx expo-doctor` acusa 2 pendências: (1) peer dependency **`react-native-worklets` ausente** (exigida pelo `react-native-reanimated` 4 — funciona no Expo Go, mas **pode crashar no APK/dev build**; corrigir com `npx expo install react-native-worklets` antes de qualquer EAS Build); (2) 14 pacotes com patch desatualizado dentro do SDK 57 (`npx expo install --check`).
+- **2026-11-02: upgrade para o SDK 58** (o Expo Go da loja só abre o SDK mais recente — no 57 o app parou de abrir). `react-native-worklets` instalado; `npx expo-doctor` 20/20. Backend local + Neon funcionando (migrações aplicadas, health/cadastro/busca Spotify testados).
 - **Decisão (2026-10-04): server local + Postgres no Neon (free)** para voltar a desenvolver; hospedagem pública fica para depois (Render free ou Railway Hobby). O server não tem acoplamento com o Railway: é um Dockerfile + `DATABASE_URL`/`PORT`.
 - **Rodar assim:** `server/.env` com o `DATABASE_URL` do Neon (connection string *direct*, sem `-pooler`, com `?sslmode=require`) → `cd server && npm run migrate && npm run dev`. No app, `.env` com `EXPO_PUBLIC_API_URL=http://<IP-da-máquina-na-LAN>:8080` (celular e PC na mesma rede Wi-Fi; `localhost` não funciona no celular). O `ufw` está ativo nessa máquina — se o celular não alcançar o server, liberar a porta 8080 para a LAN. Reiniciar o `expo start` após mudar o `.env`.
 - O banco do Neon começa **vazio** (sem usuários/reviews): criar conta de novo pelo app.
@@ -98,6 +98,8 @@ ADMIN_EMAILS=...   # e-mails de administradores (vírgula); são promovidos auto
 
 ## Known issues / gotchas
 
+- **`.npmrc` com `legacy-peer-deps=true` é necessário**: o `@react-native-community/datetimepicker` declara `react-native-windows` como peer opcional, que conflita com o RN 0.88 e quebra `npm install`/`npx expo install`. Não remova (o EAS Build também roda `npm ci`).
+- **RN 0.88: `ListFooterComponent`/`ListEmptyComponent`/`ListHeaderComponent` não aceitam `null`** — use `cond ? <X/> : undefined`.
 - **`btoa` não existe no RN** — `lib/spotifyAuth.ts` usa uma implementação própria de base64url (não troque por `btoa`).
 - **Busca do Spotify limita a 10 resultados** (`limit=10`): valores maiores (20/30/50) retornam 400 `Invalid limit` após mudança na API.
 - **Web + SQLite é alpha:** no Chrome o OPFS do `expo-sqlite` pode falhar ao abrir o banco (tela branca). O alvo de teste é mobile (Expo Go). Para mexer no web, confira `metro.config.js` (wasm + headers) e `app.json` → `web.output: "static"`.
@@ -105,7 +107,7 @@ ADMIN_EMAILS=...   # e-mails de administradores (vírgula); são promovidos auto
 - A API do Spotify **não devolve gênero** no objeto de álbum (`genre` fica `null`). O enriquecimento de gênero/país via **Deezer** é best-effort (sem chave, com timeout de 5s) e nunca bloqueia o save: se falhar, o review/log é salvo só com o ano do Spotify.
 - **País do artista** (`album_country`, código ISO) vem do Deezer **nem sempre** preenchido (ex.: The Beatles → vazio) — o score de diversidade usa gênero+década; país entra no mapa só quando disponível. O **MusicBrainz** (tabela `artists`) resolve os que faltam em background: no save de review/log e via `POST /api/me/countries/backfill` disparado ao abrir o perfil. O lookup usa `User-Agent` descritivo (política do MusicBrainz); 429/503/erro de rede **não são cacheados** (re-tentados depois), país não encontrado é cacheado como `null` para não reconsultar.
 - **Diversidade (entropia normalizada):** `score = H/log2(n) × 100`, onde `H = -Σ p·log2(p)` sobre a distribuição de gêneros. `score = 0` se só 1 gênero; `score = null` se nenhum álbum tem gênero. Álbuns distintos = união de `reviews` + `listening_logs` (metadata da review tem prioridade sobre o log).
-- Expo SDK é versionado: ao mudar de SDK, leia os docs em https://docs.expo.dev/versions/v57.0.0/.
+- Expo SDK é versionado: ao mudar de SDK, leia os docs em https://docs.expo.dev/versions/v58.0.0/.
 - **Express 5** tipa `req.params.X` como `string | string[]` (não só `string`). Em `server/`, use `String(req.params.X)`.
 - `server/` usa `noUncheckedIndexedAccess` — desestruturar de `.returning()`/arrays pode dar `undefined`; trate antes de usar.
 - **`server/.dockerignore` NÃO pode excluir `drizzle/`**: o `migrate.ts` lê essa pasta em runtime (`node dist/migrate.js` no boot do container). Já houve bug disso antes.

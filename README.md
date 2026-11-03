@@ -1,7 +1,7 @@
 # Albumrate
 
-![Expo SDK 57](https://img.shields.io/badge/Expo-SDK%2057-000020?logo=expo&logoColor=white)
-![React Native 0.86](https://img.shields.io/badge/React%20Native-0.86-61DAFB?logo=react&logoColor=black)
+![Expo SDK 58](https://img.shields.io/badge/Expo-SDK%2058-000020?logo=expo&logoColor=white)
+![React Native 0.88](https://img.shields.io/badge/React%20Native-0.88-61DAFB?logo=react&logoColor=black)
 ![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![Node 22 + Express 5](https://img.shields.io/badge/Node%2022-Express%205-339933?logo=nodedotjs&logoColor=white)
 ![Postgres + Drizzle](https://img.shields.io/badge/Postgres-Drizzle-4169E1?logo=postgresql&logoColor=white)
@@ -63,7 +63,7 @@ App mobile em **Expo + React Native** com **backend próprio** (Node/Express + P
 
 | Camada | Tecnologia |
 | --- | --- |
-| Framework | Expo SDK 57 (React Native 0.86, React 19) |
+| Framework | Expo SDK 58 (React Native 0.88, React 19.3) |
 | Linguagem | TypeScript (strict) |
 | Rotas | expo-router (rotas protegidas com `Stack.Protected`) |
 | Banco local | expo-sqlite (tabela `albums`, só status da lista) |

@@ -1,0 +1,30 @@
+# Blueprint do Render: sobe o server/ (Dockerfile) no plano free, com deploy
+# automático a cada push no master. O banco fica no Neon (DATABASE_URL).
+# Valores com `sync: false` são pedidos no painel do Render ao criar o Blueprint.
+services:
+  - type: web
+    name: albumrate-server
+    runtime: docker
+    plan: free
+    region: virginia
+    branch: master
+    rootDir: server
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeploy: true
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: TOKEN_ENCRYPTION_KEY # 64 hex: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+        sync: false
+      - key: SPOTIFY_CLIENT_ID
+        sync: false
+      - key: SPOTIFY_CLIENT_SECRET
+        sync: false
+      - key: ADMIN_EMAILS
+        sync: false
+      - key: CORS_ORIGINS
+        value: http://localhost:8081

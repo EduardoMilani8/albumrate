@@ -212,7 +212,7 @@ export default function SearchScreen() {
             <View style={styles.center}>
               <Text style={styles.error}>Nenhum usuário encontrado.</Text>
             </View>
-          ) : null
+          ) : undefined
         }
       />
     )
