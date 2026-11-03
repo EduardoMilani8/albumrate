@@ -9,10 +9,21 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://albumrate-server.onrender.com",
+        "EXPO_PUBLIC_SPOTIFY_CLIENT_ID": "78e9e0e6e0b943749e6dda552598907f"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://albumrate-server.onrender.com",
+        "EXPO_PUBLIC_SPOTIFY_CLIENT_ID": "78e9e0e6e0b943749e6dda552598907f"
+      }
     }
   },
   "submit": {

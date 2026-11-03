@@ -141,7 +141,10 @@ ADMIN_EMAILS=...   # e-mails de administradores (vírgula); são promovidos auto
 
 ## Roadmap / decisões
 
-- **Fase atual:** evoluir o app testando no **Expo Go** (`npx expo start` + QR code), com o backend no Render + Neon. Próximo passo: APK via EAS Build.
-- **Quando o app parecer finalizado/legal:** gerar **APK standalone via EAS Build** (`eas build -p android --profile preview`, requer conta Expo). O APK aponta pro mesmo `EXPO_PUBLIC_API_URL`. Compartilhar com amigos = instalar o APK (permitir fontes desconhecidas); iOS precisaria de TestFlight/App Store (US$ 99/ano).
+- **Fase atual:** evoluir o app testando no **Expo Go** (`npx expo start` + QR code), com o backend no Render + Neon. APK funcionando (ver abaixo).
+- **APK (desde 2026-11-02):** projeto EAS `@edui/eduardo-celular` (conta `edui`; o projeto antigo do time `edui1s-team` ficou inacessível e foi substituído). Gerar: `npx eas-cli@latest build -p android --profile preview` (~20 min, APK com keystore guardada na nuvem do Expo; instalar pelo link do build, "fontes desconhecidas"). **As `EXPO_PUBLIC_*` do build vêm do `env` do `eas.json`, não do `.env`** (o `.env` está no `.gitignore` e o EAS não envia arquivos ignorados) — ao mudar a URL da API, mude lá. Login com Spotify no APK exige `albumrate://` nas Redirect URIs do painel do Spotify. iOS precisaria de TestFlight/App Store (US$ 99/ano).
 - **Se o cold start incomodar:** Render Starter (pago, sempre ligado) ou outro host sempre ligado; o banco no Neon não muda.
+- **Próximas atualizações (pedido do usuário, 2026-11-02):**
+  1. **Grande repaginada do front — mobile e web.** Redesenhar as telas (não só ajustes pontuais) mantendo o design system de `constants/theme.ts`/`themes.ts`. Combinar a direção visual com o usuário antes de começar. O trabalho anterior seguia os mockups 1b–1g.
+  2. **Web como alvo de verdade** (pré-requisito da repaginada no web): hoje o login não persiste no navegador — `lib/auth.tsx` usa `expo-secure-store` direto, que não existe no web (`getValueWithKeyAsync is not a function`); usar o mesmo padrão de `lib/storage.ts` (localStorage no web). Revisar também o SQLite no web (alpha/OPFS, ver Known issues), layout responsivo para telas largas e incluir a origem do web em `CORS_ORIGINS` quando houver deploy do web.
 - Ideias futuras possíveis (não decididas): validação de e-mail, página pública de perfil, listas/desafios, "quero ouvir" sincronizado no backend.

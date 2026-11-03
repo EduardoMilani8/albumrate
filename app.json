@@ -35,11 +35,15 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "router": {},
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
       "eas": {
-        "projectId": "2203bddd-2ffc-4ec2-82b5-8cf72b957fa5"
+        "projectId": "5c728c09-6b41-434e-9a4a-d6ccea9ac684"
       }
     },
-    "owner": "edui1s-team"
+    "owner": "edui"
   }
 }
